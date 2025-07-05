@@ -1,8 +1,6 @@
 import React, { ReactNode } from 'react';
 import Recipes from '../widgets/recipes/recipes';
 
-
-
 const RecipePage = () => (
   
     <div>
