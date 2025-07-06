@@ -139,37 +139,15 @@ const Planner = () => {
     };
   };
 
-  // Calcular totales de la semana
-  const getWeekTotals = () => {
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalCarbs = 0;
-    let totalFat = 0;
-    
-    days.forEach(day => {
-      const dayPlan = weeklyPlan[day];
-      Object.values(dayPlan.meals).forEach(([meal]: [any]) => {
-        if (meal.recipeId && sampleRecipes[meal.recipeId]) {
-          const recipe = sampleRecipes[meal.recipeId];
-          totalCalories += recipe.calories;
-          totalProtein += recipe.macros.protein;
-          totalCarbs += recipe.macros.carbs;
-          totalFat += recipe.macros.fat;
-        }
-      });
-    });
-    
-    return { totalCalories, totalProtein, totalCarbs, totalFat };
-  };
+ const getWeekTotals = () => {
+  let totalCalories = 0;
+  let totalProtein = 0;
+  let totalCarbs = 0;
+  let totalFat = 0;
 
-  const getSelectedDayTotals = () => {
-    const dayPlan = weeklyPlan[selectedDay];
-    let totalCalories = 0;
-    let totalProtein = 0;
-    let totalCarbs = 0;
-    let totalFat = 0;
-    
-    Object.values(dayPlan.meals).forEach(([meal] : [any]) => {
+  days.forEach(day => {
+    const dayPlan = weeklyPlan[day];
+    Object.values(dayPlan.meals).forEach((meal: any) => {
       if (meal.recipeId && sampleRecipes[meal.recipeId]) {
         const recipe = sampleRecipes[meal.recipeId];
         totalCalories += recipe.calories;
@@ -178,9 +156,32 @@ const Planner = () => {
         totalFat += recipe.macros.fat;
       }
     });
-    
-    return { totalCalories, totalProtein, totalCarbs, totalFat };
-  };
+  });
+
+  return { totalCalories, totalProtein, totalCarbs, totalFat };
+};
+
+
+const getSelectedDayTotals = () => {
+  const dayPlan = weeklyPlan[selectedDay];
+  let totalCalories = 0;
+  let totalProtein = 0;
+  let totalCarbs = 0;
+  let totalFat = 0;
+
+  Object.values(dayPlan.meals).forEach((meal: any) => {
+    if (meal.recipeId && sampleRecipes[meal.recipeId]) {
+      const recipe = sampleRecipes[meal.recipeId];
+      totalCalories += recipe.calories;
+      totalProtein += recipe.macros.protein;
+      totalCarbs += recipe.macros.carbs;
+      totalFat += recipe.macros.fat;
+    }
+  });
+
+  return { totalCalories, totalProtein, totalCarbs, totalFat };
+};
+
 
   const toggleMealStatus = (day, meal) => {
     setMealStatus(prev => ({
