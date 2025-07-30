@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RecipeType {
+  PR   // Primero
+  SG    // Segundo
+  AC    // Acompañamiento
+  PU    // plato unico
+  CN    // cena
+  DS    //dulce postre
+  SN  //snack/salsa/otro
+}
+
+enum Season {
+invierno
+primavera
+verano
+otoño
+}
+
+enum Context {
+comida
+cena
+}
+
+// =======================
+// Modelo de recetas
+// =======================
+model Recipe {
+  id           String   @id @default(uuid())
+  name         String
+  type         RecipeType?  
+  context      RecipeContext []
+  ingredients  String
+  // ingredients  Ingredients[]
+  recipe       String
+  notes        String?
+  season       Season?
+  createdAt    DateTime @default(now())
+  robot        Boolean
+  updatedAt    DateTime @updatedAt
+  proteinas      Float?  // macros opcionales
+  grasas         Float?
+  carbohidratos  Float?
+  calorias       Int?
+  frequency      Int? //1-5 or null
+
+    @@index([type,name,season,id])
+
+}
+
+// =======================
+// Modelo de contexto en recetas temporal y posiblemente eliminable si cambio de BD
+// =======================
+model RecipeContext {
+  id       String   @id @default(uuid())
+  context  Context
+  recipe   Recipe   @relation(fields: [recipeId], references: [id])
+  recipeId String
+}
+
+// =======================
+// Modelo de ingredientes
+// =======================
+model Ingredients {
+  id           String   @id @default(uuid())
+  name         String
+  // recipes      Recipe[]?
+  updatedAt DateTime @updatedAt
+     
+    @@index([name,id])
+
+}
+

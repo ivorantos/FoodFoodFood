@@ -8,19 +8,27 @@
     "prod": "npm run tsc && ts-node-dev --respawn app.ts",
     "dev": "npm run tsc && npm run debug",
     "debug": "ts-node-dev --inspect=localhost:9229  --respawn app.ts",
-    "tsc": "rm -rf dist && tsc"
+    "tsc": "rm -rf dist && tsc",
+    "seed": "tsx db/seed.ts"
+
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.12.0",
     "express": "^5.1.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.12",
+    "prisma": "^6.12.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
+    "tsx": "^4.20.3",
     "typescript": "^5.8.3"
+  },
+  "prisma": {
+    "schema": "./db/prisma/schema.prisma"
   }
 }
