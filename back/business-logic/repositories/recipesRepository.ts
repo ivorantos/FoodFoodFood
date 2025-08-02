@@ -1,19 +1,12 @@
-// server/business-logic/repositories/recetas.repository.ts
-import { Receta } from '../../types/global';
+import prisma from "../../db/db";
 
-// Esto luego puede conectarse a SQLite
-let recetas: Receta[] = [
-  {
-    id: '1',
-    nombre: 'Lentejas',
-    tipo: 'plato_unico',
-    contextos: ['comida'],
-    ingredientes: ['lentejas', 'chorizo'],
-    instrucciones: 'Cocinar todo junto',
-    activa: true
-  }
-];
 
-export function getRecetasFromDB(): Receta[] {
+export async function getRecetasFromDB() {
+  const recetas = await prisma.recipe.findMany({
+    include: {
+      context: true,
+    },
+  });
+
   return recetas;
 }

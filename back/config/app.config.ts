@@ -1,5 +1,5 @@
 import express from 'express'
-// import cors from 'cors';
+import cors from 'cors';
 // import helmet from "helmet";
 import recipesRouter from '../business-logic/routers/recipesRouter';
 
@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 // app.use(helmet());
 /*todo change origin*/
-// app.use(cors({ credentials: true, origin: 'http://localhost:3030'}))
+ app.use(cors({ credentials: true, origin: 'http://localhost:5173'}))
 
 /*Routes*/
 app.use('/api/recetas', recipesRouter);
