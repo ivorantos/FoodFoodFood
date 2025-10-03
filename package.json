@@ -1,6 +1,9 @@
 {
+  "name": "recetApp",
+  "version": "1.0.0",
   "scripts": {
-    "dev": "npm --prefix front run dev",
-    "dev:server": "npm --prefix back run dev"
+    "dev:front": "npm run dev --prefix front",
+    "dev:back": "npm run dev --prefix back",
+    "dev": "npm run dev:front & npm run dev:back"
   }
 }
