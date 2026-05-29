@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Recipe } from '../../types';
-import { getRecetas } from '../../services/recipeService';
+import { getRecetas, createReceta, updateReceta, deleteReceta } from '../../services/recipeService';
 
 export const useRecipes = () => {
   const [recetas, setRecetas] = useState<Recipe[]>([]);

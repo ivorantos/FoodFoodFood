@@ -4,9 +4,16 @@ import { Recipe, Season, RecipeType } from '../../types';
 import { useRecipes } from './useRecipes';
 import RecipeDetailModal from '../../components/RecipeDetailModal';
 import { getEmptyRecipe } from '../../utils';
+import {createReceta, deleteReceta, updateReceta} from "../../services/recipeService";
 
 const Recipes = () => {
-  const { recetas, loading, error } = useRecipes();
+  const { recetas: fetchedRecetas, loading, error } = useRecipes();
+  const [recetas, setRecetas] = useState<Recipe[]>([]);
+
+  useEffect(() => {
+    setRecetas(fetchedRecetas);
+  }, [fetchedRecetas]);
+
 
   const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [filters, setFilters] = useState({
@@ -82,19 +89,10 @@ const Recipes = () => {
     }));
   };
 
-const handleDeleteRecipe = async (id: string) => {
-  try {
-    await fetch(`/api/recipes/${id}`, {
-      method: "DELETE",
-    });
-
-    // refrescar lista
-    // opción rápida:
-    window.location.reload();
-  } catch (err) {
-    console.error(err);
-  }
-};
+  const handleDeleteRecipe = async (id: string) => {
+    await deleteReceta(id);
+    setRecetas(prev => prev.filter(r => r.id !== id));
+  };
 
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => (
     <div
@@ -245,8 +243,17 @@ const handleDeleteRecipe = async (id: string) => {
                 recipe={selectedRecipe}
                 mode={modalMode}
                 onClose={() => setSelectedRecipe(null)}
-                onSave={(recipe, isNew) => {
-                  // Implementar lógica de guardar
+                onSave={async (recipe, isNew) => {
+                  if (isNew) {
+                    const { id, createdAt, updatedAt, ...rest } = recipe;
+                    const created = await createReceta(rest);
+                    setRecetas(prev => [created, ...prev]);
+                  } else {
+                    const { id, createdAt, updatedAt, ...rest } = recipe;
+                    const updated = await updateReceta(id, rest);
+                    setRecetas(prev => prev.map(r => r.id === id ? updated : r));
+                  }
+                  setSelectedRecipe(null);
                 }}
               />
             )}
