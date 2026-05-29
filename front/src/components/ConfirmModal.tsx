@@ -1,6 +1,8 @@
 {/* Confirmar eliminación */}
       {showDeleteConfirm && (
-        <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-10">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setShowDeleteConfirm(false)}
+          >
           <div className="bg-white rounded-xl p-6 shadow-xl max-w-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">¿Eliminar receta?</h3>
             <p className="text-gray-600 mb-4">Esta acción no se puede deshacer.</p>

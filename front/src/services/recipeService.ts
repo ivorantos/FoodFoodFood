@@ -9,5 +9,5 @@ export async function getRecetas(): Promise<Recipe[]> {
     throw new Error(json.error || 'Error al obtener recetas');
   }
 
-  return json.data; // ← Asegúrate de que el backend devuelve { data: [...] }
+  return json.data; 
 }

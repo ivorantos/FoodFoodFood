@@ -82,9 +82,19 @@ const Recipes = () => {
     }));
   };
 
-  const handleDeleteRecipe = (id: string) => {
-    alert('Implementar eliminación real en la API si es necesario.');
-  };
+const handleDeleteRecipe = async (id: string) => {
+  try {
+    await fetch(`/api/recipes/${id}`, {
+      method: "DELETE",
+    });
+
+    // refrescar lista
+    // opción rápida:
+    window.location.reload();
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const RecipeCard = ({ recipe }: { recipe: Recipe }) => (
     <div

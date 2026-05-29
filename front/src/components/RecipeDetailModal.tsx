@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, Edit3, Trash2, Flame, Clock, Leaf } from "lucide-react";
-import { Recipe, RecipeType, Season } from "../types"; // Asegúrate de tener estos tipos definidos
+import { Recipe, RecipeType, Season } from "../types"; 
 import { getEmptyRecipe } from "../utils";
 
 type Mode = 'view' | 'edit' | 'create';
@@ -27,19 +27,7 @@ const getTypeColor = (type: string) => {
   return colors[type] || 'bg-gray-100 text-gray-800 border-gray-200';
 };
 
-const MacroCard = ({
-  icon,
-  label,
-  value,
-  unit,
-  color,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value?: number | null;
-  unit: string;
-  color: string;
-}) => (
+const MacroCard = ({  icon, label, value,unit,color,}: {icon: React.ReactNode;label: string;value?: number | null;unit: string;color: string;}) => (
   <div className="bg-white/70 backdrop-blur-sm rounded-xl p-3 border border-white/20 shadow-sm">
     <div className="flex items-center gap-2 mb-1">
       <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center`}>
@@ -58,10 +46,13 @@ const RecipeDetailModal: React.FC<Props> = ({ isOpen,onClose,recipe,onDelete, on
   const [formData, setFormData] = useState<Recipe>(recipe ?? getEmptyRecipe());
 
   const [isEditing, setIsEditing] = useState(mode !== "view");
+  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEffect(() => {setFormData(recipe ?? formData);
-    setIsEditing(mode !== "view");
-  }, [recipe, mode]);
+  useEffect(() => {
+  recipe ? setFormData(recipe): setFormData(getEmptyRecipe());
+  setIsEditing(mode !== "view");
+}, [recipe, mode]);
 
   const updateField = (field: keyof Recipe, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -94,11 +85,13 @@ const RecipeDetailModal: React.FC<Props> = ({ isOpen,onClose,recipe,onDelete, on
   const isView = !isEditing;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={onClose}>
+        <div
         className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden border border-white/20"
         onClick={(e) => e.stopPropagation()}
-      >
+        >
         {/* Header */}
         <div className="relative bg-gradient-to-r from-orange-500 to-red-500 p-6 text-white">
           <div className="absolute top-4 right-4 flex gap-2">
