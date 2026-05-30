@@ -1,29 +1,35 @@
-import { useState, useCallback, useMemo } from 'react';
-import type {MealType, Recipe, SelectedSlot, WeekPlan} from '../../domain/model.types';
-import {buildEmptyWeek, getDayTotals, getWeekTotals, MOCK_RECIPES} from "./plannerHelper";
+import { useState, useCallback, useMemo, useEffect } from 'react';
+import type { MealType, Recipe, SelectedSlot, WeekPlan } from '../../domain/model.types';
+import { buildEmptyWeek, getDayTotals, getWeekTotals } from './plannerHelper';
+import { getRecetas } from '../../api/recipeService';
 
 interface PlannerState {
     weekOffset:   number;
     weekPlan:     WeekPlan;
     selectedSlot: SelectedSlot | null;
+    swapSource:   SelectedSlot | null;
     selectedDay:  string;
     isDirty:      boolean;
 }
 
 export function usePlanner() {
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+
+    useEffect(() => {
+        getRecetas().then(setRecipes).catch(() => {});
+    }, []);
+
     const [state, setState] = useState<PlannerState>(() => {
         const weekPlan = buildEmptyWeek(0);
         return {
             weekOffset:   0,
             weekPlan,
             selectedSlot: null,
+            swapSource:   null,
             selectedDay:  Object.keys(weekPlan)[0],
             isDirty:      false,
         };
     });
-
-    // TODO: reemplazar MOCK_RECIPES por fetch a la API
-    const recipes = MOCK_RECIPES;
 
     const assignRecipe = useCallback((date: string, mealType: MealType, recipe: Recipe) => {
         setState((prev) => ({
@@ -74,15 +80,54 @@ export function usePlanner() {
         }));
     }, []);
 
-    const weekTotals      = useMemo(() => getWeekTotals(state.weekPlan, recipes), [state.weekPlan]);
+    // ── Swap ──────────────────────────────────────────────────────────────────
+    const startSwap = useCallback((slot: SelectedSlot) => {
+        setState((prev) => ({ ...prev, swapSource: slot }));
+    }, []);
+
+    const cancelSwap = useCallback(() => {
+        setState((prev) => ({ ...prev, swapSource: null }));
+    }, []);
+
+    const confirmSwap = useCallback((targetDate: string, targetMealType: MealType) => {
+        setState((prev) => {
+            if (!prev.swapSource) return prev;
+            const { date: srcDate, mealType: srcMeal } = prev.swapSource;
+            const srcSnapshot = prev.weekPlan[srcDate][srcMeal].snapshot;
+            const dstSnapshot = prev.weekPlan[targetDate][targetMealType].snapshot;
+            return {
+                ...prev,
+                isDirty: true,
+                swapSource: null,
+                weekPlan: {
+                    ...prev.weekPlan,
+                    [srcDate]: {
+                        ...prev.weekPlan[srcDate],
+                        [srcMeal]: { ...prev.weekPlan[srcDate][srcMeal], snapshot: dstSnapshot },
+                    },
+                    [targetDate]: {
+                        ...prev.weekPlan[targetDate],
+                        [targetMealType]: { ...prev.weekPlan[targetDate][targetMealType], snapshot: srcSnapshot },
+                    },
+                },
+            };
+        });
+    }, []);
+
+    const weekTotals = useMemo(
+        () => getWeekTotals(state.weekPlan, recipes),
+        [state.weekPlan, recipes]
+    );
+
     const selectedDayTotals = useMemo(
         () => getDayTotals(state.weekPlan[state.selectedDay], recipes),
-        [state.weekPlan, state.selectedDay]
+        [state.weekPlan, state.selectedDay, recipes]
     );
 
     return {
         ...state,
         days:              Object.keys(state.weekPlan),
+        recipes,
         weekTotals,
         selectedDayTotals,
         getDayTotals:      (date: string) => getDayTotals(state.weekPlan[date], recipes),
@@ -91,6 +136,8 @@ export function usePlanner() {
         setSelectedSlot,
         setSelectedDay,
         setWeekOffset,
-        recipes
+        startSwap,
+        cancelSwap,
+        confirmSwap,
     };
 }

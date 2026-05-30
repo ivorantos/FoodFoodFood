@@ -2,6 +2,7 @@ import { Filter, Plus } from 'lucide-react';
 import RecipeCard from './RecipeCard';
 import RecipeDetailModal from '../../components/RecipeDetailModal';
 import {useRecipesHelper} from "./useRecipes";
+import SlotPicker from "../Planner/slotPicker";
 
 const Recipes = () => {
   const {
@@ -10,8 +11,9 @@ const Recipes = () => {
     selectedRecipe, modalMode,
     handleFilterChange, clearFilters,
     openRecipe, openCreateModal, closeModal,
-    handleSave, handleDelete,
+    handleSave, handleDelete,plannerPickerOpen, plannerPickerRecipe, openPlannerPicker, closePlannerPicker,
   } = useRecipesHelper();
+
 
   if (loading) return <p className="p-4">Cargando recetas...</p>;
   if (error) return <p className="p-4 text-red-500">Error: {error}</p>;
@@ -62,7 +64,13 @@ const Recipes = () => {
             {filteredRecipes.length === 0
                 ? <p className="text-gray-500 text-center col-span-full">No hay resultados.</p>
                 : filteredRecipes.map((recipe) => (
-                    <RecipeCard key={recipe.id} recipe={recipe} onOpen={openRecipe} onDelete={handleDelete} />
+                    <RecipeCard
+                        key={recipe.id}
+                        recipe={recipe}
+                        onOpen={openRecipe}
+                        onDelete={handleDelete}
+                        onAddToPlanner={openPlannerPicker}
+                    />
                 ))
             }
           </div>
@@ -76,6 +84,13 @@ const Recipes = () => {
                   onClose={closeModal}
                   onSave={handleSave}
                   onDelete={handleDelete}
+              />
+          )}
+          {plannerPickerOpen && plannerPickerRecipe && (
+              <SlotPicker
+                  recipes={[plannerPickerRecipe]}
+                  onSelect={closePlannerPicker}
+                  onClose={closePlannerPicker}
               />
           )}
         </main>

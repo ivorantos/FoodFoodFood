@@ -23,6 +23,10 @@ export const useRecipesHelper = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>('view');
+  const [plannerPickerOpen, setPlannerPickerOpen]     = useState(false);
+  const [plannerPickerRecipe, setPlannerPickerRecipe] = useState<Recipe | null>(null);
+
+
 
   const seasons = Object.values(Season);
   const types = Object.values(RecipeType);
@@ -51,6 +55,15 @@ export const useRecipesHelper = () => {
 
   const clearFilters = () => setFilters(defaultFilters);
 
+
+  const openPlannerPicker = (recipe: Recipe) => {
+    setPlannerPickerRecipe(recipe);
+    setPlannerPickerOpen(true);
+  };
+  const closePlannerPicker = () => {
+    setPlannerPickerOpen(false);
+    setPlannerPickerRecipe(null);
+  };
   const openRecipe = (recipe: Recipe, mode: ModalMode) => {
     setSelectedRecipe(recipe);
     setModalMode(mode);
@@ -88,5 +101,6 @@ export const useRecipesHelper = () => {
     handleFilterChange, clearFilters,
     openRecipe, openCreateModal, closeModal,
     handleSave, handleDelete,
+    plannerPickerOpen, plannerPickerRecipe, openPlannerPicker, closePlannerPicker,
   };
 };

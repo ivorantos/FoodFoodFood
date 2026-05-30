@@ -55,29 +55,29 @@ export function generateMockWeekPlan(recipes: Recipe[]): WeekPlan {
 // Cálculos de macros (operan sobre snapshots + recipes)
 // ---------------------------------------------------------------------------
 
-export function getSlotCalories(recipeId: string | null | undefined, recipes: Record<string, Recipe>): number {
+export function getSlotCalories(recipeId: string | null | undefined, recipes: Recipe[]): number {
     if (!recipeId) return 0;
-    return recipes[recipeId]?.calorias ?? 0;
+    return recipes.find(r => r.id === recipeId)?.calorias ?? 0;
 }
 
-export function getDayTotals(day: DayPlan, recipes: Record<string, Recipe>) {
+export function getDayTotals(day: DayPlan, recipes: Recipe[]) {
     const ids = [day.lunch.snapshot?.id, day.dinner.snapshot?.id];
     return ids.reduce(
         (acc, id) => {
-            const r = id ? recipes[id] : null;
+            const r = id ? recipes.find(r => r.id === id) : null;
             if (!r) return acc;
             return {
-                calorias:       acc.calorias       + (r.calorias       ?? 0),
-                proteinas:      acc.proteinas      + (r.proteinas      ?? 0),
-                carbohidratos:  acc.carbohidratos  + (r.carbohidratos  ?? 0),
-                grasas:         acc.grasas         + (r.grasas         ?? 0),
+                calorias:      acc.calorias      + (r.calorias      ?? 0),
+                proteinas:     acc.proteinas     + (r.proteinas     ?? 0),
+                carbohidratos: acc.carbohidratos + (r.carbohidratos ?? 0),
+                grasas:        acc.grasas        + (r.grasas        ?? 0),
             };
         },
         { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 }
     );
 }
 
-export function getWeekTotals(weekPlan: WeekPlan, recipes: Record<string, Recipe>) {
+export function getWeekTotals(weekPlan: WeekPlan, recipes: Recipe[]) {
     return Object.values(weekPlan).reduce(
         (acc, day) => {
             const t = getDayTotals(day, recipes);
