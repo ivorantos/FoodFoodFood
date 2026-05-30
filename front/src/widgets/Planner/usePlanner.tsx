@@ -64,6 +64,16 @@ export function usePlanner() {
         setState((prev) => ({ ...prev, selectedDay: date }));
     }, []);
 
+    const setWeekOffset = useCallback((offset: number) => {
+        const weekPlan = buildEmptyWeek(offset);
+        setState((prev) => ({
+            ...prev,
+            weekOffset: offset,
+            weekPlan,
+            selectedDay: Object.keys(weekPlan)[0],
+        }));
+    }, []);
+
     const weekTotals      = useMemo(() => getWeekTotals(state.weekPlan, recipes), [state.weekPlan]);
     const selectedDayTotals = useMemo(
         () => getDayTotals(state.weekPlan[state.selectedDay], recipes),
@@ -80,5 +90,6 @@ export function usePlanner() {
         clearSlot,
         setSelectedSlot,
         setSelectedDay,
+        setWeekOffset,
     };
 }

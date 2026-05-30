@@ -36,6 +36,21 @@ export function buildEmptyWeek(weekOffset: number): WeekPlan {
     );
 }
 
+export function generateMockWeekPlan(recipes: Recipe[]): WeekPlan {
+    const pool = recipes.filter(r => r.id);
+    if (!pool.length) return buildEmptyWeek(0);
+    const pick = () => pool[Math.floor(Math.random() * pool.length)];
+    return Object.fromEntries(
+        getISOWeekDates(0).map((date) => [
+            date,
+            {
+                lunch:  { id: crypto.randomUUID(), snapshot: { id: pick().id, name: pick().name, imageUrl: null } },
+                dinner: { id: crypto.randomUUID(), snapshot: { id: pick().id, name: pick().name, imageUrl: null } },
+            } satisfies DayPlan,
+        ])
+    );
+}
+
 // ---------------------------------------------------------------------------
 // Cálculos de macros (operan sobre snapshots + recipes)
 // ---------------------------------------------------------------------------
