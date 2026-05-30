@@ -71,7 +71,7 @@ model RecipeContext {
 model Ingredients {
   id           String   @id @default(uuid())
   name         String
-  // recipes      Recipe[]?
+  // Recipes      Recipe[]?
   updatedAt DateTime @updatedAt
      
     @@index([name,id])

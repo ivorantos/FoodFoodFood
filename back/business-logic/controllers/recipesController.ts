@@ -10,7 +10,7 @@ export const getAllRecetas = async (req : Request, res : Response) => {
 
   } catch (error) {
     console.error(error);
-   res.status(500).json(errorResponse('Error fetching recipes'));
+   res.status(500).json(errorResponse('Error fetching Recipes'));
 
   }
 };

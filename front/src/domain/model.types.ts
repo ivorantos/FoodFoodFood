@@ -20,6 +20,7 @@ export enum Context {
   cena = 'cena',
 }
 
+
 export interface Recipe {
   id: string
   name: string
@@ -45,3 +46,31 @@ export interface RecipeContext {
   recipeId: string
   recipe: Recipe
 }
+
+export type MealType = 'lunch' | 'dinner';
+
+export interface RecipeSnapshot {
+  id:       string;
+  name:     string;
+  imageUrl: string | null;
+}
+
+export interface RecipeSlot {
+  id:       string;
+  snapshot: RecipeSnapshot | null;
+}
+
+export interface DayPlan {
+  lunch:  RecipeSlot;
+  dinner: RecipeSlot;
+}
+
+/** Indexado por fecha ISO "YYYY-MM-DD" */
+export type WeekPlan = Record<string, DayPlan>;
+
+export interface SelectedSlot {
+  date:     string;
+  mealType: MealType;
+}
+
+

@@ -2,13 +2,11 @@ import prisma from "../../db/db";
 
 
 export async function getRecetasFromDB() {
-  const recetas = await prisma.recipe.findMany({
+  return prisma.recipe.findMany({
     include: {
       context: true,
     },
   });
-
-  return recetas;
 }
 
 export async function createRecetaInDB(data: any) {

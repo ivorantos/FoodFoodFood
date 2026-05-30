@@ -1,4 +1,4 @@
-import { Recipe } from "./types"; // Asegúrate de tener estos tipos definidos
+import { Recipe } from "./domain/model.types"; // Asegúrate de tener estos tipos definidos
 
 export const getEmptyRecipe = (): Recipe => ({
   id: crypto.randomUUID(),

@@ -1,4 +1,4 @@
-import { Recipe } from "../types";
+import { Recipe } from "../domain/model.types";
 
 const BASE = 'http://localhost:3000/api/recetas';
 

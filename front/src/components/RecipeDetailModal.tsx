@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, Edit3, Trash2, Flame, Clock, Leaf } from "lucide-react";
-import { Recipe, RecipeType, Season } from "../types"; 
+import { Recipe, RecipeType, Season } from "../domain/model.types";
 import { getEmptyRecipe } from "../utils";
 
 type Mode = 'view' | 'edit' | 'create';

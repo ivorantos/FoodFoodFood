@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import Recipes from '../widgets/recipes/recipes';
+import Recipes from '../widgets/Recipes/recipes';
 
 const RecipePage = () => (
   

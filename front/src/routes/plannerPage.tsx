@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
-import Recipes from '../widgets/recipes/recipes';
-import Planner from '../widgets/planner/planner';
+import Recipes from '../widgets/Recipes/recipes';
+import Planner from '../widgets/Planner/planner';
 
 const RecipePage = () => (
   
