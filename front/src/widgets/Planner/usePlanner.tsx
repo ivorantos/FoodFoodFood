@@ -91,5 +91,6 @@ export function usePlanner() {
         setSelectedSlot,
         setSelectedDay,
         setWeekOffset,
+        recipes
     };
 }
