@@ -1,0 +1,64 @@
+/* Topbar.css - Estilos exclusivos del componente Topbar */
+
+.topbar-container {
+    width: 100%;
+    height: 4rem; /* h-16 */
+    background-color: var(--bg-surface);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 50; /* Para que al hacer scroll, las recetas pasen por debajo */
+}
+
+/* Marca o Logo dentro de la barra */
+.topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Contenedor horizontal de la navegación */
+.topbar-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+/* Botones/Enlaces de navegación individuales */
+.topbar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.topbar-link:hover {
+    background-color: var(--bg-surface-hover);
+    color: var(--text-main);
+}
+
+/* Estado activo del botón (ej: si estás en esa sección) */
+.topbar-link.is-active {
+    background-color: rgba(255, 159, 10, 0.15);
+    color: var(--brand-orange);
+    font-weight: 600;
+}
+
+/* Zona derecha de la barra (donde puede ir el buscador o perfil) */
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}

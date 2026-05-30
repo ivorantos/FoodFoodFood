@@ -1,0 +1,26 @@
+/* shared.css */
+.btn-primary-orange {
+    background-color: #ff9f0a;
+    color: #000000;
+    font-weight: 700;
+    font-size: 0.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.75rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-orange:hover {
+    background-color: #e08b08;
+}
+
+.badge-kcal {
+    color: #ff9f0a;
+    background-color: rgba(255, 159, 10, 0.1);
+    border: 1px solid rgba(255, 159, 10, 0.2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+}

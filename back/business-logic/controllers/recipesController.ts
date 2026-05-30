@@ -29,7 +29,9 @@ export const createReceta = async (req: Request, res: Response) => {
 
 export const updateReceta = async (req: Request, res: Response) => {
   try {
-    const receta = await updateRecetaInDB(req.params.id, req.body);
+    const { context, ...data}= req.body
+
+    const receta = await updateRecetaInDB(req.params.id, data);
     res.json(successResponse(receta));
   } catch (error) {
     console.error("MIRA AQUÍ EL ERROR DE LA DB ->", error);

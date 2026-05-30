@@ -1,43 +1,57 @@
-import { Edit2, Trash2, ChefHat, CalendarPlus } from 'lucide-react';
 import { Recipe } from '../../domain/model.types';
 import { ModalMode } from '../../domain/app.types';
 
 interface Props {
-    recipe:          Recipe;
-    onOpen:          (recipe: Recipe, mode: ModalMode) => void;
-    onDelete:        (id: string) => void;
-    onAddToPlanner?: (recipe: Recipe) => void;
+    recipe: Recipe;
+    onOpen: (recipe: Recipe, mode: ModalMode) => void;
+    onDelete: (id: string) => void;
 }
 
-const RecipeCard = ({ recipe, onOpen, onDelete, onAddToPlanner }: Props) => (
-    <div onClick={() => onOpen(recipe, 'view')} className="cursor-pointer bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-lg text-gray-800">{recipe.name}</h3>
-            <div className="flex gap-1">
-                {recipe.robot && <ChefHat className="w-4 h-4 text-blue-500" />}
-                {onAddToPlanner && (
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onAddToPlanner(recipe); }}
-                        className="text-green-500 hover:text-green-700"
-                        title="Añadir al planner"
-                    >
-                        <CalendarPlus className="w-4 h-4" />
-                    </button>
-                )}
-                <button onClick={(e) => { e.stopPropagation(); onOpen(recipe, 'edit'); }} className="text-blue-500 hover:text-blue-700">
-                    <Edit2 className="w-4 h-4" />
-                </button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(recipe.id); }} className="text-red-500 hover:text-red-700">
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            </div>
+function hashColor(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    const h = Math.abs(hash) % 360;
+    return `hsl(${h}, 35%, 45%)`;
+}
+
+const RecipeCard = ({ recipe, onOpen }: Props) => (
+    <div
+        onClick={() => onOpen(recipe, 'view')}
+        style={{ background: '#1a1a1a', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.06)', transition: 'box-shadow 0.18s' }}
+        onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)')}
+        onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+    >
+        {/* Área imagen / placeholder */}
+        <div style={{
+            height: 160,
+            // Foto real de comida aleatoria, recortada en banner y oscurecida para que quede premium
+            background: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&h=250&q=80') center/cover no-repeat`,
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '12px 12px 0 0',
+            borderBottom: '1px solid #222'
+        }}>
+
+            {/* Badge de tipo si existe */}
+            {recipe.type && (
+                <span style={{
+                    position: 'absolute', top: 12, left: 12,
+                    background: '#ff9f0a', color: '#000',
+                    borderRadius: 6, padding: '3px 8px', fontSize: 11, fontWeight: 800,
+                    textTransform: 'uppercase', letterSpacing: '0.5px', zIndex: 2
+                }}>{recipe.type}</span>
+            )}
         </div>
-        <p className="text-gray-600 text-sm mb-2">{recipe.notes}</p>
-        <div className="mb-2">
-            <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-1">{recipe.type}</span>
-            <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mr-1">{recipe.season}</span>
+
+
+        {/* Body */}
+        <div style={{ padding: '10px 14px 14px' }}>
+            <p style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>{recipe.season ?? '—'}</p>
+            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>{recipe.name}</p>
+            {recipe.calorias && (
+                <p style={{ fontSize: 12, color: '#FF9500', marginTop: 6 }}>{recipe.calorias} kcal</p>
+            )}
         </div>
-        <p className="text-xs text-gray-500"><strong>Ingredientes:</strong> {recipe.ingredients}</p>
     </div>
 );
 

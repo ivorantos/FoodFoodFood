@@ -1,8 +1,8 @@
-import { Filter, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, SlidersHorizontal, X } from 'lucide-react';
 import RecipeCard from './RecipeCard';
 import RecipeDetailModal from '../../components/RecipeDetailModal';
-import {useRecipesHelper} from "./useRecipes";
-import SlotPicker from "../Planner/slotPicker";
+import { useRecipesHelper } from './useRecipes';
 
 const Recipes = () => {
   const {
@@ -11,91 +11,103 @@ const Recipes = () => {
     selectedRecipe, modalMode,
     handleFilterChange, clearFilters,
     openRecipe, openCreateModal, closeModal,
-    handleSave, handleDelete,plannerPickerOpen, plannerPickerRecipe, openPlannerPicker, closePlannerPicker,
+    handleSave, handleDelete,
   } = useRecipesHelper();
 
+  const [showFilters, setShowFilters] = useState(false);
 
-  if (loading) return <p className="p-4">Cargando recetas...</p>;
-  if (error) return <p className="p-4 text-red-500">Error: {error}</p>;
+  if (loading) return <p style={{ padding: 16, color: '#aaa' }}>Cargando recetas...</p>;
+  if (error) return <p style={{ padding: 16, color: '#f87171' }}>Error: {error}</p>;
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {/* Cabecera */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Mis Recetas</h1>
-            <button onClick={openCreateModal} className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-              <Plus className="w-4 h-4" /> Nueva Receta
+      <div style={{ minHeight: '100vh', background: '#111', padding: '28px 32px', boxSizing: 'border-box', width: '100%' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#fff' }}>Mis Recetas</h1>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setShowFilters(v => !v)} style={iconBtnStyle}>
+              <SlidersHorizontal size={17} />
+            </button>
+            <button onClick={openCreateModal} style={{ ...iconBtnStyle, background: '#FF9500', border: '1px solid #FF9500', color: '#fff' }}>
+              <Plus size={17} />
             </button>
           </div>
+        </div>
 
-          {/* Filtros */}
-          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Filter className="w-4 h-4 text-gray-500" />
-              <span className="font-medium text-gray-700">Filtros</span>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <select value={filters.season} onChange={(e) => handleFilterChange('season', e.target.value)} className="p-2 border rounded">
+        {/* Búsqueda */}
+        <div style={{ position: 'relative', marginBottom: 24 }}>
+          <input
+              type="text"
+              placeholder="Título, ingrediente, notas..."
+              value={filters.tags}
+              onChange={e => handleFilterChange('tags', e.target.value)}
+              style={searchStyle}
+          />
+        </div>
+
+        {/* Filtros colapsables */}
+        {showFilters && (
+            <div style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '14px 16px', marginBottom: 20, display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+              <select value={filters.season} onChange={e => handleFilterChange('season', e.target.value)} style={selectStyle}>
                 <option value="">Todas las temporadas</option>
-                {seasons.map((s) => <option key={s} value={s}>{s}</option>)}
+                {seasons.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
-              <select value={filters.type} onChange={(e) => handleFilterChange('type', e.target.value)} className="p-2 border rounded">
+              <select value={filters.type} onChange={e => handleFilterChange('type', e.target.value)} style={selectStyle}>
                 <option value="">Todos los tipos</option>
-                {types.map((t) => <option key={t} value={t}>{t}</option>)}
+                {types.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
-              <input
-                  type="text"
-                  placeholder="Buscar..."
-                  value={filters.tags}
-                  onChange={(e) => handleFilterChange('tags', e.target.value)}
-                  className="p-2 border rounded"
-              />
-              <label className="flex items-center gap-2">
-                <input type="checkbox" checked={filters.robotCooking} onChange={(e) => handleFilterChange('robotCooking', e.target.checked)} />
-                <span>Robot de cocina</span>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#aaa', fontSize: 13 }}>
+                <input type="checkbox" checked={filters.robotCooking} onChange={e => handleFilterChange('robotCooking', e.target.checked)} />
+                Robot de cocina
               </label>
+              <button onClick={clearFilters} style={{ marginLeft: 'auto', color: '#FF9500', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13 }}>
+                Limpiar
+              </button>
             </div>
-            <button onClick={clearFilters} className="mt-2 text-blue-500 hover:text-blue-700 text-sm">Limpiar filtros</button>
-          </div>
+        )}
 
-          {/* Grid de recetas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredRecipes.length === 0
-                ? <p className="text-gray-500 text-center col-span-full">No hay resultados.</p>
-                : filteredRecipes.map((recipe) => (
-                    <RecipeCard
-                        key={recipe.id}
-                        recipe={recipe}
-                        onOpen={openRecipe}
-                        onDelete={handleDelete}
-                        onAddToPlanner={openPlannerPicker}
-                    />
-                ))
-            }
-          </div>
+        {/* Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+          {filteredRecipes.length === 0
+              ? <p style={{ color: '#555', gridColumn: '1/-1', textAlign: 'center', paddingTop: 60 }}>No hay resultados.</p>
+              : filteredRecipes.map(recipe => (
+                  <RecipeCard key={recipe.id} recipe={recipe} onOpen={openRecipe} onDelete={handleDelete} />
+              ))
+          }
+        </div>
 
-          {/* Modal */}
-          {selectedRecipe && (
-              <RecipeDetailModal
-                  isOpen={true}
-                  recipe={selectedRecipe}
-                  mode={modalMode}
-                  onClose={closeModal}
-                  onSave={handleSave}
-                  onDelete={handleDelete}
-              />
-          )}
-          {plannerPickerOpen && plannerPickerRecipe && (
-              <SlotPicker
-                  recipes={[plannerPickerRecipe]}
-                  onSelect={closePlannerPicker}
-                  onClose={closePlannerPicker}
-              />
-          )}
-        </main>
+        {selectedRecipe && (
+            <RecipeDetailModal
+                isOpen={true}
+                recipe={selectedRecipe}
+                mode={modalMode}
+                onClose={closeModal}
+                onSave={handleSave}
+                onDelete={handleDelete}
+            />
+        )}
       </div>
   );
+};
+
+const iconBtnStyle: React.CSSProperties = {
+  width: 38, height: 38, borderRadius: '50%',
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: '#1a1a1a', color: '#aaa',
+  display: 'flex', alignItems: 'center', justifyContent: 'center',
+  cursor: 'pointer',
+};
+
+const searchStyle: React.CSSProperties = {
+  width: '100%', height: 42, borderRadius: 12,
+  border: '1px solid rgba(255,255,255,0.1)',
+  background: '#1a1a1a', padding: '0 16px',
+  fontSize: 13, color: '#fff', outline: 'none',
+};
+
+const selectStyle: React.CSSProperties = {
+  background: '#222', border: '1px solid rgba(255,255,255,0.1)',
+  color: '#ccc', borderRadius: 8, padding: '6px 10px', fontSize: 13,
 };
 
 export default Recipes;

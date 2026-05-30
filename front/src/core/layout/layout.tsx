@@ -1,19 +1,16 @@
-import { Box } from '@mui/material';
-import TopBar from './topBar';
+import TopBar from './topbar/topBar';
 
 interface LayoutProps {
-    children?: React.ReactNode; // Esto es necesario para que se reconozca 'children'
+    children?: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  return (
-    <Box style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <TopBar />
-      <main style={{ flexGrow: 1, overflow: 'auto' }}>
-        {children}
-      </main>
-    </Box>
-  );
-};
+const Layout: React.FC<LayoutProps> = ({ children }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+        <TopBar />
+        <main style={{ flexGrow: 1, overflow: 'auto' }}>
+            {children}
+        </main>
+    </div>
+);
 
 export default Layout;
