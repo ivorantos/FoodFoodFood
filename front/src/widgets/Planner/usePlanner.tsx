@@ -15,8 +15,11 @@ interface PlannerState {
 export function usePlanner() {
     const [recipes, setRecipes] = useState<Recipe[]>([]);
 
+
     useEffect(() => {
-        getRecetas().then(setRecipes).catch(() => {});
+        const refetch = () => getRecetas().then(setRecipes).catch(() => {});
+        window.addEventListener('planner:invalidate', refetch);
+        return () => window.removeEventListener('planner:invalidate', refetch);
     }, []);
 
     const [state, setState] = useState<PlannerState>(() => {

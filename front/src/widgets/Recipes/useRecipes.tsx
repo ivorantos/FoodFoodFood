@@ -1,9 +1,10 @@
 // widgets/Recipes/Recipes.helper.ts
 import { useState, useEffect } from 'react';
-import { Recipe, Season, RecipeType } from '../../domain/model.types';
+import {Recipe, Season, RecipeType, MealType} from '../../domain/model.types';
 import { getRecetas, createReceta, updateReceta, deleteReceta } from '../../api/recipeService';
 import { getEmptyRecipe } from '../../utils';
 import {ModalMode} from "../../domain/app.types";
+import {assignRecipeToSlot, invalidatePlannerCache} from "../../api/plannerService";
 
 
 export interface Filters {
@@ -94,6 +95,15 @@ export const useRecipesHelper = () => {
     closeModal();
   };
 
+  const handleAssignToPlanner = async (dates: string[], mealType: MealType) => {
+    if (!plannerPickerRecipe) return;
+    await Promise.all(
+        dates.map(date => assignRecipeToSlot(plannerPickerRecipe.id, date, mealType))
+    );
+    invalidatePlannerCache();
+    closePlannerPicker();
+  };
+
   return {
     filteredRecipes, filters, seasons, types,
     loading, error,
@@ -101,6 +111,7 @@ export const useRecipesHelper = () => {
     handleFilterChange, clearFilters,
     openRecipe, openCreateModal, closeModal,
     handleSave, handleDelete,
+    handleAssignToPlanner,
     plannerPickerOpen, plannerPickerRecipe, openPlannerPicker, closePlannerPicker,
   };
 };

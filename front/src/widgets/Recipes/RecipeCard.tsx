@@ -2,10 +2,11 @@ import { Recipe } from '../../domain/model.types';
 import { ModalMode } from '../../domain/app.types';
 
 interface Props {
-    recipe: Recipe;
-    onOpen: (recipe: Recipe, mode: ModalMode) => void;
-    onDelete: (id: string) => void;
-}
+         recipe: Recipe;
+         onOpen: (recipe: Recipe, mode: ModalMode) => void;
+         onDelete: (id: string) => void;
+        onAssign: (recipe: Recipe) => void;
+     }
 
 function hashColor(str: string): string {
     let hash = 0;
@@ -14,8 +15,7 @@ function hashColor(str: string): string {
     return `hsl(${h}, 35%, 45%)`;
 }
 
-const RecipeCard = ({ recipe, onOpen }: Props) => (
-    <div
+const RecipeCard = ({ recipe, onOpen, onAssign }: Props) => (    <div
         onClick={() => onOpen(recipe, 'view')}
         style={{ background: '#1a1a1a', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.06)', transition: 'box-shadow 0.18s' }}
         onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 24px rgba(0,0,0,0.4)')}
@@ -45,12 +45,26 @@ const RecipeCard = ({ recipe, onOpen }: Props) => (
 
 
         {/* Body */}
-        <div style={{ padding: '10px 14px 14px' }}>
-            <p style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>{recipe.season ?? '—'}</p>
-            <p style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.25 }}>{recipe.name}</p>
+        <div style={{padding: '10px 14px 14px'}}>
+            <p style={{fontSize: 12, color: '#888', marginBottom: 4}}>{recipe.season ?? '—'}</p>
+            <p style={{fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.25}}>{recipe.name}</p>
             {recipe.calorias && (
-                <p style={{ fontSize: 12, color: '#FF9500', marginTop: 6 }}>{recipe.calorias} kcal</p>
+                <p style={{fontSize: 12, color: '#FF9500', marginTop: 6}}>{recipe.calorias} kcal</p>
             )}
+            <button
+                onClick={e => {
+                    e.stopPropagation();
+                    onAssign(recipe);
+                }}
+                style={{
+                    marginTop: 10, width: '100%', padding: '7px 0',
+                    borderRadius: 8, border: '1px solid rgba(255,149,0,0.3)',
+                    background: 'rgba(255,149,0,0.08)', color: '#FF9500',
+                    fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                }}
+            >
+                + Añadir al Planner
+            </button>
         </div>
     </div>
 );

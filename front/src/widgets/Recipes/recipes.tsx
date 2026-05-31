@@ -3,6 +3,7 @@ import { Plus, SlidersHorizontal, X } from 'lucide-react';
 import RecipeCard from './RecipeCard';
 import RecipeDetailModal from '../../components/RecipeDetailModal';
 import { useRecipesHelper } from './useRecipes';
+import PlannerDatePicker from "../../components/PlannerDatePicker";
 
 const Recipes = () => {
   const {
@@ -12,6 +13,7 @@ const Recipes = () => {
     handleFilterChange, clearFilters,
     openRecipe, openCreateModal, closeModal,
     handleSave, handleDelete,
+    plannerPickerOpen, plannerPickerRecipe, openPlannerPicker, closePlannerPicker, handleAssignToPlanner,
   } = useRecipesHelper();
 
   const [showFilters, setShowFilters] = useState(false);
@@ -71,10 +73,10 @@ const Recipes = () => {
           {filteredRecipes.length === 0
               ? <p style={{ color: '#555', gridColumn: '1/-1', textAlign: 'center', paddingTop: 60 }}>No hay resultados.</p>
               : filteredRecipes.map(recipe => (
-                  <RecipeCard key={recipe.id} recipe={recipe} onOpen={openRecipe} onDelete={handleDelete} />
-              ))
+                  <RecipeCard key={recipe.id} recipe={recipe} onOpen={openRecipe} onDelete={handleDelete} onAssign={openPlannerPicker} />              ))
           }
         </div>
+
 
         {selectedRecipe && (
             <RecipeDetailModal
@@ -84,6 +86,14 @@ const Recipes = () => {
                 onClose={closeModal}
                 onSave={handleSave}
                 onDelete={handleDelete}
+            />
+        )}
+
+        {plannerPickerOpen && plannerPickerRecipe && (
+            <PlannerDatePicker
+                recipeName={plannerPickerRecipe.name}
+                onConfirm={handleAssignToPlanner}
+                onClose={closePlannerPicker}
             />
         )}
       </div>
