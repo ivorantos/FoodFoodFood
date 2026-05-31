@@ -31,7 +31,8 @@ export function usePlanner() {
         };
     });
 
-    const assignRecipe = useCallback((date: string, mealType: MealType, recipe: Recipe) => {
+    // Reemplaza el slot completo con el array de recetas seleccionadas
+    const assignRecipe = useCallback((date: string, mealType: MealType, selected: Recipe[]) => {
         setState((prev) => ({
             ...prev,
             isDirty: true,
@@ -41,7 +42,7 @@ export function usePlanner() {
                     ...prev.weekPlan[date],
                     [mealType]: {
                         id: prev.weekPlan[date][mealType].id,
-                        snapshot: { id: recipe.id, name: recipe.name, imageUrl: null },
+                        snapshot: selected.map(r => ({ id: r.id, name: r.name, imageUrl: null })),
                     },
                 },
             },
@@ -80,7 +81,6 @@ export function usePlanner() {
         }));
     }, []);
 
-    // ── Swap ──────────────────────────────────────────────────────────────────
     const startSwap = useCallback((slot: SelectedSlot) => {
         setState((prev) => ({ ...prev, swapSource: slot }));
     }, []);

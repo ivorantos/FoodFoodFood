@@ -20,7 +20,6 @@ export enum Context {
   cena = 'cena',
 }
 
-
 export interface Recipe {
   id: string
   name: string
@@ -37,7 +36,7 @@ export interface Recipe {
   grasas?: number | null
   carbohidratos?: number | null
   calorias?: number | null
-  frequency?: number | null // 1-5 or null
+  frequency?: number | null
 }
 
 export interface RecipeContext {
@@ -57,7 +56,7 @@ export interface RecipeSnapshot {
 
 export interface RecipeSlot {
   id:       string;
-  snapshot: RecipeSnapshot | null;
+  snapshot: RecipeSnapshot[] | null;  // array: un slot puede tener hasta 3 recetas
 }
 
 export interface DayPlan {
@@ -72,5 +71,3 @@ export interface SelectedSlot {
   date:     string;
   mealType: MealType;
 }
-
-
