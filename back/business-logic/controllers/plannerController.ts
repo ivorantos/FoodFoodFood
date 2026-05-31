@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
-import { clearSlotInDB, deleteWeekPlanFromDB, getWeekPlanFromDB, upsertWeekPlanInDB } from '../repositories/plannerRepository';
+import {
+    clearSlotInDB,
+    deleteWeekPlanFromDB,
+    getWeekPlanFromDB,
+    upsertSlotInDB,
+    upsertWeekPlanInDB
+} from '../repositories/plannerRepository';
 import { errorResponse, successResponse } from '../../helpers/response';
 
 export const getWeekPlan = async (req: Request, res: Response) => {
@@ -38,5 +44,15 @@ export const deleteWeekPlan = async (req: Request, res: Response) => {
         res.json(successResponse(null));
     } catch (error) {
         res.status(500).json(errorResponse('Error deleting week plan'));
+    }
+};
+
+export const upsertSlot = async (req: Request, res: Response) => {
+    try {
+        const { weekStart, date, mealType, entries } = req.body;
+        await upsertSlotInDB(weekStart, date, mealType, entries);
+        res.json(successResponse(null));
+    } catch (error) {
+        res.status(500).json(errorResponse('Error saving slot'));
     }
 };

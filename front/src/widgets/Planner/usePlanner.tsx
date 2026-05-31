@@ -1,7 +1,18 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { MealType, Recipe, SelectedSlot, WeekPlan } from '../../domain/model.types';
-import { buildEmptyWeek, getDayTotals, getWeekTotals } from './plannerHelper';
+import {
+    apiResponseToWeekPlan,
+    buildEmptyWeek,
+    getDayTotals,
+    getWeekStartFromOffset,
+    getWeekTotals,
+} from './plannerHelper';
 import { getRecetas } from '../../api/recipeService';
+import {
+    getWeekPlan,
+    upsertSlot,
+    clearSlot as clearSlotAPI,
+} from '../../api/plannerService';
 
 interface PlannerState {
     weekOffset:   number;
@@ -15,8 +26,8 @@ interface PlannerState {
 export function usePlanner() {
     const [recipes, setRecipes] = useState<Recipe[]>([]);
 
-
     useEffect(() => {
+        getRecetas().then(setRecipes).catch(() => {});
         const refetch = () => getRecetas().then(setRecipes).catch(() => {});
         window.addEventListener('planner:invalidate', refetch);
         return () => window.removeEventListener('planner:invalidate', refetch);
@@ -34,36 +45,62 @@ export function usePlanner() {
         };
     });
 
-    // Reemplaza el slot completo con el array de recetas seleccionadas
+    // Carga el plan de la semana actual al montar
+    useEffect(() => {
+        const weekStart = getWeekStartFromOffset(0);
+        getWeekPlan(weekStart)
+            .then(apiPlan => {
+                if (!apiPlan) return;
+                const weekPlan = apiResponseToWeekPlan(apiPlan, 0);
+                setState(prev => ({ ...prev, weekPlan, selectedDay: Object.keys(weekPlan)[0] }));
+            })
+            .catch(() => {});
+    }, []);
+
     const assignRecipe = useCallback((date: string, mealType: MealType, selected: Recipe[]) => {
-        setState((prev) => ({
-            ...prev,
-            isDirty: true,
-            weekPlan: {
-                ...prev.weekPlan,
-                [date]: {
-                    ...prev.weekPlan[date],
-                    [mealType]: {
-                        id: prev.weekPlan[date][mealType].id,
-                        snapshot: selected.map(r => ({ id: r.id, name: r.name, imageUrl: null })),
+        setState((prev) => {
+            const weekStart = getWeekStartFromOffset(prev.weekOffset);
+            upsertSlot(
+                weekStart,
+                date,
+                mealType,
+                selected.map((r, i) => ({ recipeId: r.id, recipeName: r.name, order: i }))
+            ).catch(console.error);
+
+            return {
+                ...prev,
+                isDirty: true,
+                weekPlan: {
+                    ...prev.weekPlan,
+                    [date]: {
+                        ...prev.weekPlan[date],
+                        [mealType]: {
+                            id: prev.weekPlan[date][mealType].id,
+                            snapshot: selected.map(r => ({ id: r.id, name: r.name, imageUrl: null })),
+                        },
                     },
                 },
-            },
-        }));
+            };
+        });
     }, []);
 
     const clearSlot = useCallback((date: string, mealType: MealType) => {
-        setState((prev) => ({
-            ...prev,
-            isDirty: true,
-            weekPlan: {
-                ...prev.weekPlan,
-                [date]: {
-                    ...prev.weekPlan[date],
-                    [mealType]: { id: prev.weekPlan[date][mealType].id, snapshot: null },
+        setState((prev) => {
+            const weekStart = getWeekStartFromOffset(prev.weekOffset);
+            clearSlotAPI(weekStart, date, mealType).catch(console.error);
+
+            return {
+                ...prev,
+                isDirty: true,
+                weekPlan: {
+                    ...prev.weekPlan,
+                    [date]: {
+                        ...prev.weekPlan[date],
+                        [mealType]: { id: prev.weekPlan[date][mealType].id, snapshot: null },
+                    },
                 },
-            },
-        }));
+            };
+        });
     }, []);
 
     const setSelectedSlot = useCallback((slot: SelectedSlot | null) => {
@@ -74,8 +111,10 @@ export function usePlanner() {
         setState((prev) => ({ ...prev, selectedDay: date }));
     }, []);
 
-    const setWeekOffset = useCallback((offset: number) => {
-        const weekPlan = buildEmptyWeek(offset);
+    const setWeekOffset = useCallback(async (offset: number) => {
+        const weekStart = getWeekStartFromOffset(offset);
+        const apiPlan = await getWeekPlan(weekStart).catch(() => null);
+        const weekPlan = apiResponseToWeekPlan(apiPlan, offset);
         setState((prev) => ({
             ...prev,
             weekOffset: offset,

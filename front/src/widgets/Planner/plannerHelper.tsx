@@ -1,4 +1,4 @@
-import { DayPlan, Recipe, WeekPlan } from '../../domain/model.types';
+import { DayPlan, MealType, Recipe, WeekPlan } from '../../domain/model.types';
 
 export const DAYS_ES: Record<number, string> = { 0: 'Lun', 1: 'Mar', 2: 'Mié', 3: 'Jue', 4: 'Vie', 5: 'Sáb', 6: 'Dom' };
 
@@ -81,4 +81,24 @@ export function getWeekTotals(weekPlan: WeekPlan, recipes: Recipe[]) {
         },
         { calorias: 0, proteinas: 0, carbohidratos: 0, grasas: 0 }
     );
+}
+
+export function apiResponseToWeekPlan(apiPlan: any, weekOffset: number): WeekPlan {
+    const base = buildEmptyWeek(weekOffset);
+    if (!apiPlan?.slots) return base;
+
+    for (const slot of apiPlan.slots) {
+        if (!base[slot.date]) continue;
+        base[slot.date][slot.mealType as MealType] = {
+            id: slot.id,
+            snapshot: slot.entries.length > 0
+                ? slot.entries.map((e: any) => ({ id: e.recipeId, name: e.recipeName, imageUrl: null }))
+                : null,
+        };
+    }
+    return base;
+}
+
+export function getWeekStartFromOffset(weekOffset: number): string {
+    return getISOWeekDates(weekOffset)[0]; // lunes de esa semana
 }
