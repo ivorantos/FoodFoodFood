@@ -40,6 +40,7 @@ model Recipe {
   ingredients  String
   // ingredients  Ingredients[]
   recipe       String
+  planEntries SlotEntry[]
   notes        String?
   season       Season?
   createdAt    DateTime @default(now())
@@ -76,5 +77,40 @@ model Ingredients {
      
     @@index([name,id])
 
+}
+
+
+model WeekPlan {
+  id        String     @id @default(uuid())
+  weekStart String     @unique  // "YYYY-MM-DD" del lunes
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  slots     MealSlot[]
+}
+
+model MealSlot {
+  id         String     @id @default(uuid())
+  weekPlanId String
+  weekPlan   WeekPlan   @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+  date       String     // "YYYY-MM-DD"
+  mealType   PlanMealType
+  entries    SlotEntry[]
+
+  @@unique([weekPlanId, date, mealType])
+}
+
+model SlotEntry {
+  id         String   @id @default(uuid())
+  slotId     String
+  slot       MealSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  recipeId   String
+  recipe     Recipe   @relation(fields: [recipeId], references: [id])
+  recipeName String
+  order      Int      @default(0)
+}
+
+enum PlanMealType {
+  lunch
+  dinner
 }
 

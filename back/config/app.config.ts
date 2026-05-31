@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors';
 // import helmet from "helmet";
 import recipesRouter from '../business-logic/routers/recipesRouter';
+import plannerRouter from "../business-logic/routers/plannerRouter";
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 /*Routes*/
 app.use('/api/recetas', recipesRouter);
+app.use('/api/planner', plannerRouter);
 
 
 export default app;
