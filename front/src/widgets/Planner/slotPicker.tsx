@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Shuffle, X, ChevronDown, ChevronRight, Check } from 'lucide-react';
-import type { Recipe } from '../../domain/model.types';
+import type { Recipe, RecipeSnapshot } from '../../domain/model.types';
 
 const C = {
     bg:        '#161616',
@@ -15,20 +15,19 @@ const C = {
 };
 
 interface Props {
-    recipes:            Recipe[];
-    onSelect:           (recipes: Recipe[]) => void;  // array
-    onClose:            () => void;
-    preselectedRecipe?: Recipe | null;
+    recipes:         Recipe[];
+    onSelect:        (recipes: RecipeSnapshot[]) => void;
+    onClose:         () => void;
+    preselectedIds?: string[];
 }
 
 const MAX_SELECT = 3;
 
-const SlotPicker = ({ recipes, onSelect, onClose, preselectedRecipe }: Props) => {
-    const [query,    setQuery]    = useState('');
-    const [expanded, setExpanded] = useState<string | null>(null);
-    const [selected, setSelected] = useState<string[]>(
-        preselectedRecipe ? [preselectedRecipe.id] : []
-    );
+const SlotPicker = ({ recipes, onSelect, onClose, preselectedIds = [] }: Props) => {
+    const [query,       setQuery]       = useState('');
+    const [expanded,    setExpanded]    = useState<string | null>(null);
+    const [selected,    setSelected]    = useState<string[]>(preselectedIds);
+    const [customText,  setCustomText]  = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -38,14 +37,12 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselectedRecipe }: Props) =>
         return () => window.removeEventListener('keydown', onKey);
     }, [onClose]);
 
-    const filtered = recipes.filter((r) =>
-        r.name.toLowerCase().includes(query.toLowerCase())
-    );
+    const filtered = recipes.filter(r => r.name.toLowerCase().includes(query.toLowerCase()));
 
     const pickRandom = () => {
         if (!recipes.length) return;
         const r = recipes[Math.floor(Math.random() * recipes.length)];
-        onSelect([r]);
+        onSelect([{ id: r.id, name: r.name, imageUrl: null, isCustom: false }]);
         onClose();
     };
 
@@ -57,8 +54,17 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselectedRecipe }: Props) =>
         );
     };
 
+    const handleAddCustom = () => {
+        const trimmed = customText.trim();
+        if (!trimmed) return;
+        onSelect([{ id: crypto.randomUUID(), name: trimmed, imageUrl: null, isCustom: true }]);
+        onClose();
+    };
+
     const handleAdd = () => {
-        const picked = recipes.filter(r => selected.includes(r.id));
+        const picked: RecipeSnapshot[] = recipes
+            .filter(r => selected.includes(r.id))
+            .map(r => ({ id: r.id, name: r.name, imageUrl: null, isCustom: false }));
         onSelect(picked);
         onClose();
     };
@@ -74,20 +80,10 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselectedRecipe }: Props) =>
             onClick={onClose}
         >
             <div
-                style={{
-                    background: C.bg,
-                    borderRadius: 18,
-                    border: `1px solid ${C.border2}`,
-                    boxShadow: '0 32px 80px rgba(0,0,0,0.7)',
-                    width: 'min(96vw, 680px)',   // más ancho
-                    maxHeight: '48vh',            // ~mitad de alto
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                }}
+                style={{ background: C.bg, borderRadius: 18, border: `1px solid ${C.border2}`, boxShadow: '0 32px 80px rgba(0,0,0,0.7)', width: 'min(96vw, 680px)', maxHeight: '48vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
                 onClick={e => e.stopPropagation()}
             >
-                {/* ── Header compacto ── */}
+                {/* ── Header ── */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
                     <input
                         ref={inputRef}
@@ -104,6 +100,24 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselectedRecipe }: Props) =>
                     </button>
                 </div>
 
+                {/* ── Texto libre ── */}
+                <div style={{ display: 'flex', gap: 6, padding: '8px 12px', borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+                    <input
+                        value={customText}
+                        onChange={e => setCustomText(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleAddCustom(); }}
+                        placeholder="Añadir texto libre..."
+                        style={{ flex: 1, background: C.surface2, border: `1px solid ${C.border2}`, borderRadius: 8, padding: '6px 10px', color: C.text, fontSize: 13, outline: 'none', fontFamily: 'inherit' }}
+                    />
+                    <button
+                        onClick={handleAddCustom}
+                        disabled={!customText.trim()}
+                        style={{ padding: '6px 12px', borderRadius: 8, background: customText.trim() ? C.accent : C.surface2, border: 'none', color: customText.trim() ? '#000' : C.textMuted, fontWeight: 700, fontSize: 13, cursor: customText.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}
+                    >
+                        + Añadir
+                    </button>
+                </div>
+
                 {/* ── Lista ── */}
                 <ul style={{ overflowY: 'auto', flex: 1, padding: '6px 8px', margin: 0, listStyle: 'none' }}>
                     {filtered.length === 0 && (
@@ -113,24 +127,17 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselectedRecipe }: Props) =>
                         const isSelected = selected.includes(r.id);
                         const isDisabled = !isSelected && selected.length >= MAX_SELECT;
                         const isExpanded = expanded === r.id;
-
                         return (
                             <li key={r.id} style={{ marginBottom: 2 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 10, background: isSelected ? C.accentDim : 'transparent', border: isSelected ? `1px solid rgba(255,149,0,0.25)` : '1px solid transparent', transition: 'background 0.15s' }}>
-                                    <button
-                                        onClick={() => setExpanded(prev => prev === r.id ? null : r.id)}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 0, display: 'flex', alignItems: 'center', flexShrink: 0 }}
-                                    >
+                                    <button onClick={() => setExpanded(prev => prev === r.id ? null : r.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 0, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                                         {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                                     </button>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <span style={{ fontSize: 14, fontWeight: 600, color: C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
                                         {r.calorias && <span style={{ fontSize: 11, color: C.accent }}>{r.calorias} kcal</span>}
                                     </div>
-                                    <button
-                                        onClick={() => !isDisabled && toggleSelect(r.id)}
-                                        style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${isSelected ? C.accent : C.border2}`, background: isSelected ? C.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDisabled ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: isDisabled ? 0.35 : 1, transition: 'all 0.15s' }}
-                                    >
+                                    <button onClick={() => !isDisabled && toggleSelect(r.id)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${isSelected ? C.accent : C.border2}`, background: isSelected ? C.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDisabled ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: isDisabled ? 0.35 : 1, transition: 'all 0.15s' }}>
                                         {isSelected && <Check size={12} color="#000" strokeWidth={3} />}
                                     </button>
                                 </div>

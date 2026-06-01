@@ -10,10 +10,14 @@ export function getISOWeekDates(weekOffset: number): string[] {
     const now = new Date();
     const monday = new Date(now);
     monday.setDate(now.getDate() - ((now.getDay() + 6) % 7) + weekOffset * 7);
+    monday.setHours(12, 0, 0, 0); // ← evita desfase UTC en zonas +N
     return Array.from({ length: 7 }, (_, i) => {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        return d.toISOString().slice(0, 10);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
     });
 }
 
@@ -29,20 +33,6 @@ export function buildEmptyWeek(weekOffset: number): WeekPlan {
     );
 }
 
-export function generateMockWeekPlan(recipes: Recipe[]): WeekPlan {
-    const pool = recipes.filter(r => r.id);
-    if (!pool.length) return buildEmptyWeek(0);
-    const pick = () => pool[Math.floor(Math.random() * pool.length)];
-    return Object.fromEntries(
-        getISOWeekDates(0).map((date) => [
-            date,
-            {
-                lunch:  { id: crypto.randomUUID(), snapshot: [{ id: pick().id, name: pick().name, imageUrl: null }] },
-                dinner: { id: crypto.randomUUID(), snapshot: [{ id: pick().id, name: pick().name, imageUrl: null }] },
-            } satisfies DayPlan,
-        ])
-    );
-}
 
 // ---------------------------------------------------------------------------
 // Cálculos de macros
@@ -87,12 +77,18 @@ export function apiResponseToWeekPlan(apiPlan: any, weekOffset: number): WeekPla
     const base = buildEmptyWeek(weekOffset);
     if (!apiPlan?.slots) return base;
 
+
     for (const slot of apiPlan.slots) {
         if (!base[slot.date]) continue;
         base[slot.date][slot.mealType as MealType] = {
             id: slot.id,
             snapshot: slot.entries.length > 0
-                ? slot.entries.map((e: any) => ({ id: e.recipeId, name: e.recipeName, imageUrl: null }))
+                ? slot.entries.map((e: any) => ({
+                    id:       e.isCustom ? e.id : e.recipeId,
+                    name:     e.recipeName,
+                    imageUrl: null,
+                    isCustom: e.isCustom ?? false,
+                }))
                 : null,
         };
     }

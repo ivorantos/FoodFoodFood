@@ -14,9 +14,10 @@ const Planner = () => {
     weekPlan, selectedDayTotals, getDayTotals,
     clearSlot, weekOffset, setWeekOffset,
     assignRecipe, recipes,
-    swapSource, startSwap, cancelSwap, confirmSwap,
+    swapSource, startSwap, cancelSwap, confirmSwap
   } = usePlannerContext();
 
+  const [pickerPreselected, setPickerPreselected] = useState<string[]>([]);
   const [pickerSlot, setPickerSlot] = useState<SelectedSlot | null>(null);
 
   useEffect(() => {
@@ -156,25 +157,77 @@ const Planner = () => {
                   <div
                       key={mealType}
                       onClick={() => handleSlotClick(selectedDay, mealType)}
-                      style={{ borderRadius: 12, padding: 20, marginBottom: 16, cursor: 'pointer', transition: 'border 0.15s', minHeight: 100, ...slotStyle }}                  >
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                      <span style={{ fontWeight: 600, color: '#fff' }}>{MEAL_LABEL[mealType]}</span>
+                      style={{
+                        borderRadius: 12,
+                        padding: 20,
+                        marginBottom: 16,
+                        cursor: 'pointer',
+                        transition: 'border 0.15s',
+                        minHeight: 100, ...slotStyle
+                      }}>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: 12
+                    }}>
+                      <span style={{fontWeight: 600, color: '#fff'}}>{MEAL_LABEL[mealType]}</span>
                       {slot.snapshot && !swapSource && (
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <button onClick={(e) => { e.stopPropagation(); setPickerSlot({ date: selectedDay, mealType }); }} style={{ fontSize: 12, color: '#FF9500', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <Pencil size={12} /> Cambiar
+                          <div style={{display: 'flex', alignItems: 'center'}}>
+                            <button onClick={(e) => {
+                              e.stopPropagation();
+                              const ids = weekPlan[selectedDay][mealType].snapshot?.map(s => s.id) ?? [];
+                              setPickerPreselected(ids);
+                              setPickerSlot({date: selectedDay, mealType});
+                            }} style={{
+                              fontSize: 12,
+                              color: '#FF9500',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4
+                            }}>
+                              <Pencil size={12}/> Cambiar
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); startSwap({ date: selectedDay, mealType }); }} style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
-                              <ArrowLeftRight size={12} /> Mover
+                            <button onClick={(e) => {
+                              e.stopPropagation();
+                              startSwap({date: selectedDay, mealType});
+                            }} style={{
+                              fontSize: 12,
+                              color: '#aaa',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginLeft: 8
+                            }}>
+                              <ArrowLeftRight size={12}/> Mover
                             </button>
-                            <button onClick={(e) => { e.stopPropagation(); clearSlot(selectedDay, mealType); }} style={{ fontSize: 12, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
-                              <Trash2 size={12} /> Quitar
+                            <button onClick={(e) => {
+                              e.stopPropagation();
+                              clearSlot(selectedDay, mealType);
+                            }} style={{
+                              fontSize: 12,
+                              color: '#ff4444',
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              marginLeft: 8
+                            }}>
+                              <Trash2 size={12}/> Quitar
                             </button>
                           </div>
                       )}
                     </div>
                     {slot.snapshot
-                        ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        ? <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
                           {slot.snapshot.map((s) => (
                               <div key={s.id} style={{
                                 background: '#1a1a1a',
@@ -185,12 +238,18 @@ const Planner = () => {
                                 alignItems: 'center',
                                 gap: 8,
                               }}>
-                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FF9500', flexShrink: 0 }} />
-                                <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{s.name}</span>
+                                <div style={{
+                                  width: 7,
+                                  height: 7,
+                                  borderRadius: '50%',
+                                  background: '#FF9500',
+                                  flexShrink: 0
+                                }}/>
+                                <span style={{fontSize: 14, fontWeight: 600, color: '#fff'}}>{s.name}</span>
                               </div>
                           ))}
                         </div>
-                        : <p style={{ color: '#555', fontSize: 14, fontStyle: 'italic', margin: 0 }}>
+                        : <p style={{color: '#555', fontSize: 14, fontStyle: 'italic', margin: 0}}>
                           {swapSource ? 'Pulsa aquí para mover aquí' : 'Sin asignar — pulsa para añadir'}
                         </p>
                     }
@@ -204,11 +263,16 @@ const Planner = () => {
         {pickerSlot && (
             <SlotPicker
                 recipes={recipes}
+                preselectedIds={pickerPreselected}
                 onSelect={(selected) => {
                   assignRecipe(pickerSlot.date, pickerSlot.mealType, selected);
                   setPickerSlot(null);
+                  setPickerPreselected([]);
                 }}
-                onClose={() => setPickerSlot(null)}
+                onClose={() => {
+                  setPickerSlot(null);
+                  setPickerPreselected([]);
+                }}
             />
         )}
       </div>

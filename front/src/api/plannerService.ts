@@ -13,7 +13,7 @@ export async function upsertSlot(
     weekStart: string,
     date: string,
     mealType: MealType,
-    entries: { recipeId: string; recipeName: string; order: number }[]
+    entries: { recipeId?: string | null; recipeName: string; isCustom?: boolean; order: number }[]
 ) {
     const res = await fetch(`${BASE}/slot`, {
         method: 'PATCH',

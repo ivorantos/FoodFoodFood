@@ -49,9 +49,10 @@ export interface RecipeContext {
 export type MealType = 'lunch' | 'dinner';
 
 export interface RecipeSnapshot {
-  id:       string;
-  name:     string;
-  imageUrl: string | null;
+  id:        string;
+  name:      string;
+  imageUrl:  string | null;
+  isCustom?: boolean;
 }
 
 export interface RecipeSlot {

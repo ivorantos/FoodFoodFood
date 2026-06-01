@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
-import type { MealType, Recipe, SelectedSlot, WeekPlan } from '../../domain/model.types';
+import type {MealType, Recipe, RecipeSnapshot, SelectedSlot, WeekPlan} from '../../domain/model.types';
 import {
     apiResponseToWeekPlan,
     buildEmptyWeek,
@@ -57,14 +57,19 @@ export function usePlanner() {
             .catch(() => {});
     }, []);
 
-    const assignRecipe = useCallback((date: string, mealType: MealType, selected: Recipe[]) => {
+    const assignRecipe = useCallback((date: string, mealType: MealType, selected: RecipeSnapshot[]) => {
         setState((prev) => {
             const weekStart = getWeekStartFromOffset(prev.weekOffset);
             upsertSlot(
                 weekStart,
                 date,
                 mealType,
-                selected.map((r, i) => ({ recipeId: r.id, recipeName: r.name, order: i }))
+                selected.map((r, i) => ({
+                    recipeId:   r.isCustom ? null : r.id,
+                    recipeName: r.name,
+                    isCustom:   r.isCustom ?? false,
+                    order:      i,
+                }))
             ).catch(console.error);
 
             return {
@@ -75,8 +80,8 @@ export function usePlanner() {
                     [date]: {
                         ...prev.weekPlan[date],
                         [mealType]: {
-                            id: prev.weekPlan[date][mealType].id,
-                            snapshot: selected.map(r => ({ id: r.id, name: r.name, imageUrl: null })),
+                            id:       prev.weekPlan[date][mealType].id,
+                            snapshot: selected.map(r => ({ id: r.id, name: r.name, imageUrl: null, isCustom: r.isCustom })),
                         },
                     },
                 },
@@ -102,6 +107,7 @@ export function usePlanner() {
             };
         });
     }, []);
+
 
     const setSelectedSlot = useCallback((slot: SelectedSlot | null) => {
         setState((prev) => ({ ...prev, selectedSlot: slot }));
