@@ -9,60 +9,73 @@ datasource db {
 
 enum RecipeType {
   PR   // Primero
-  SG    // Segundo
-  AC    // Acompañamiento
-  PU    // plato unico
-  CN    // cena
-  DS    //dulce postre
-  SN  //snack/salsa/otro
+  SG   // Segundo
+  AC   // Acompañamiento
+  PU   // plato unico
+  CN   // cena
+  DS   // dulce postre
+  SN   // snack/salsa/otro
 }
 
 enum Season {
-invierno
-primavera
-verano
-otoño
+  invierno
+  primavera
+  verano
+  otoño
 }
 
 enum Context {
-comida
-cena
+  comida
+  cena
 }
 
 // =======================
 // Modelo de recetas
 // =======================
 model Recipe {
-  id           String   @id @default(uuid())
-  name         String
-  type         RecipeType?  
-  context      RecipeContext []
-  ingredients  String
-  // ingredients  Ingredients[]
-  recipe       String
-  planEntries SlotEntry[]
-  notes        String?
-  season       Season?
-  createdAt    DateTime @default(now())
-  robot        Boolean
-  updatedAt    DateTime @updatedAt
-  proteinas      Float?  // macros opcionales
-  grasas         Float?
-  carbohidratos  Float?
-  calorias       Int?
-  frequency      Int? //1-5 or null
+  id              String   @id @default(uuid())
+  name            String   @unique
+  type            RecipeType?
+  context         RecipeContext[]
+  ingredients     String
+  recipe          String
+  planEntries     SlotEntry[]
+  notes           String?
+  season          Season?
+  createdAt       DateTime @default(now())
+  robot           Boolean
+  updatedAt       DateTime @updatedAt
+  proteinas       Float?
+  grasas          Float?
+  carbohidratos   Float?
+  calorias        Int?
+  frequency       Int?            // 1-5 or null
+  prepTime        Int?            // minutos de preparación activa
+  isComponent     Boolean         @default(false)  // excluir del planning (masas, salsas, bechamel...)
+  requiresPrevDay Boolean         @default(false)  // necesita remojo/fermentación/marinado previo
+  mainIngredient  String?         // JSON array: '["PASTA","CARNE"]'
+  relatedFrom     RecipeRelation[] @relation("from")
+  relatedTo       RecipeRelation[] @relation("to")
 
-    @@index([type,name,season,id])
+  @@index([type, name, season, id])
+}
 
+model RecipeRelation {
+  recipeId  String
+  relatedId String
+  recipe    Recipe @relation("from", fields: [recipeId], references: [id], onDelete: Cascade)
+  related   Recipe @relation("to", fields: [relatedId], references: [id], onDelete: Cascade)
+
+  @@id([recipeId, relatedId])
 }
 
 // =======================
-// Modelo de contexto en recetas temporal y posiblemente eliminable si cambio de BD
+// Modelo de contexto en recetas
 // =======================
 model RecipeContext {
-  id       String   @id @default(uuid())
+  id       String  @id @default(uuid())
   context  Context
-  recipe   Recipe   @relation(fields: [recipeId], references: [id])
+  recipe   Recipe  @relation(fields: [recipeId], references: [id])
   recipeId String
 }
 
@@ -70,15 +83,12 @@ model RecipeContext {
 // Modelo de ingredientes
 // =======================
 model Ingredients {
-  id           String   @id @default(uuid())
-  name         String
-  // Recipes      Recipe[]?
+  id        String   @id @default(uuid())
+  name      String
   updatedAt DateTime @updatedAt
-     
-    @@index([name,id])
 
+  @@index([name, id])
 }
-
 
 model WeekPlan {
   id        String     @id @default(uuid())
@@ -89,10 +99,10 @@ model WeekPlan {
 }
 
 model MealSlot {
-  id         String     @id @default(uuid())
+  id         String       @id @default(uuid())
   weekPlanId String
-  weekPlan   WeekPlan   @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
-  date       String     // "YYYY-MM-DD"
+  weekPlan   WeekPlan     @relation(fields: [weekPlanId], references: [id], onDelete: Cascade)
+  date       String       // "YYYY-MM-DD"
   mealType   PlanMealType
   entries    SlotEntry[]
 
@@ -100,18 +110,16 @@ model MealSlot {
 }
 
 model SlotEntry {
-  id         String    @id @default(uuid())
+  id         String   @id @default(uuid())
   slotId     String
-  slot       MealSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
-  recipeId   String?
-  recipe     Recipe?   @relation(fields: [recipeId], references: [id])
+  slot       MealSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  recipeId   String
+  recipe     Recipe   @relation(fields: [recipeId], references: [id])
   recipeName String
-  isCustom   Boolean   @default(false)
-  order      Int       @default(0)
+  order      Int      @default(0)
 }
 
 enum PlanMealType {
   lunch
   dinner
 }
-
