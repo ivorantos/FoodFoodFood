@@ -110,13 +110,14 @@ model MealSlot {
 }
 
 model SlotEntry {
-  id         String   @id @default(uuid())
+  id         String    @id @default(uuid())
   slotId     String
-  slot       MealSlot @relation(fields: [slotId], references: [id], onDelete: Cascade)
-  recipeId   String
-  recipe     Recipe   @relation(fields: [recipeId], references: [id])
+  slot       MealSlot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+  recipeId   String?
+  recipe     Recipe?   @relation(fields: [recipeId], references: [id], onDelete: SetNull)
   recipeName String
-  order      Int      @default(0)
+  isCustom   Boolean   @default(false)
+  order      Int       @default(0)
 }
 
 enum PlanMealType {
