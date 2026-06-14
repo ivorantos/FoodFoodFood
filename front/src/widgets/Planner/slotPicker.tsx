@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Shuffle, X, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { Shuffle, X, Check, Clock, AlertTriangle, HelpCircle } from 'lucide-react';
 import type { Recipe, RecipeSnapshot } from '../../domain/model.types';
 import { RecipeType } from '../../domain/model.types';
 
@@ -23,32 +23,107 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 interface Props {
-    recipes:     Recipe[];
-    onSelect:    (recipes: RecipeSnapshot[]) => void;
-    onClose:     () => void;
-    preselected?: RecipeSnapshot[];  // snapshot completo, no solo IDs
+    recipes:      Recipe[];
+    onSelect:     (recipes: RecipeSnapshot[]) => void;
+    onClose:      () => void;
+    preselected?: RecipeSnapshot[];
 }
 
 const MAX_SELECT = 3;
 
+const parseMainIngredient = (raw?: string | null): string => {
+    if (!raw) return '';
+    try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.join(' · ') : raw;
+    } catch { return raw; }
+};
+
+const RecipePopover = ({ recipe }: { recipe: Recipe }) => {
+    const mainIng  = parseMainIngredient(recipe.mainIngredient);
+    const contexts = recipe.context?.map(c => c.context).join(', ');
+    const steps    = recipe.recipe
+        ? recipe.recipe.split('\n').filter(s => s.trim()).slice(0, 4)
+        : [];
+    const totalSteps = recipe.recipe ? recipe.recipe.split('\n').filter(s => s.trim()).length : 0;
+
+    return (
+        <div
+            onClick={e => e.stopPropagation()}
+            style={{ position: 'absolute', right: 36, top: 0, zIndex: 10, width: 260, background: C.surface, border: `1px solid ${C.border2}`, borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.6)', padding: '12px 14px' }}
+        >
+            <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: C.text, lineHeight: 1.3 }}>{recipe.name}</p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 8px', marginBottom: 10 }}>
+                {recipe.type && (
+                    <span style={{ fontSize: 11, color: C.accent, background: 'rgba(255,149,0,0.1)', borderRadius: 4, padding: '1px 5px' }}>
+                        {TYPE_LABELS[recipe.type] ?? recipe.type}
+                    </span>
+                )}
+                {contexts && <span style={{ fontSize: 11, color: C.textMuted }}>{contexts}</span>}
+                {mainIng   && <span style={{ fontSize: 11, color: C.textMuted }}>{mainIng}</span>}
+                {recipe.prepTime != null && (
+                    <span style={{ fontSize: 11, color: C.textMuted, display: 'flex', alignItems: 'center', gap: 3 }}>
+                        <Clock size={10} /> {recipe.prepTime} min
+                    </span>
+                )}
+            </div>
+
+            {recipe.requiresPrevDay && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 10, padding: '3px 7px', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: 6 }}>
+                    <AlertTriangle size={10} color={C.accent} />
+                    <span style={{ fontSize: 11, color: C.accent }}>Preparar el día anterior</span>
+                </div>
+            )}
+
+            {steps.length > 0 && (
+                <div style={{ marginBottom: recipe.ingredients ? 8 : 0 }}>
+                    <p style={{ margin: '0 0 5px', fontSize: 10, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pasos</p>
+                    {steps.map((step, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 6, marginBottom: 4 }}>
+                            <span style={{ fontSize: 10, color: C.accent, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                            <span style={{ fontSize: 12, color: C.text, lineHeight: 1.45 }}>
+                                {step.length > 80 ? step.slice(0, 80) + '…' : step}
+                            </span>
+                        </div>
+                    ))}
+                    {totalSteps > 4 && (
+                        <p style={{ margin: '4px 0 0', fontSize: 11, color: C.textMuted, fontStyle: 'italic' }}>
+                            + {totalSteps - 4} pasos más…
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {recipe.ingredients && (
+                <div>
+                    <p style={{ margin: '0 0 4px', fontSize: 10, color: C.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ingredientes</p>
+                    <p style={{ margin: 0, fontSize: 12, color: C.textMuted, lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+                        {recipe.ingredients.length > 120 ? recipe.ingredients.slice(0, 120) + '…' : recipe.ingredients}
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const SlotPicker = ({ recipes, onSelect, onClose, preselected = [] }: Props) => {
     const [query,       setQuery]       = useState('');
-    const [expanded,    setExpanded]    = useState<string | null>(null);
     const [customText,  setCustomText]  = useState('');
     const [activeTypes, setActiveTypes] = useState<Set<string>>(
         new Set(ALL_TYPES.filter(t => !TYPES_OFF_BY_DEFAULT.has(t)))
     );
-    // basket arranca con el snapshot completo (recetas BD + custom)
-    const [basket, setBasket] = useState<RecipeSnapshot[]>(preselected);
+    const [basket,     setBasket]     = useState<RecipeSnapshot[]>(preselected);
+    const [popoverId,  setPopoverId]  = useState<string | null>(null);
 
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         inputRef.current?.focus();
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { if (popoverId) setPopoverId(null); else onClose(); } };
         window.addEventListener('keydown', onKey);
         return () => window.removeEventListener('keydown', onKey);
-    }, [onClose]);
+    }, [onClose, popoverId]);
 
     const filtered = recipes.filter(r =>
         r.name.toLowerCase().includes(query.toLowerCase()) &&
@@ -95,11 +170,6 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselected = [] }: Props) => 
             next.has(t) ? next.delete(t) : next.add(t);
             return next;
         });
-    };
-
-    const getPreview = (r: Recipe) => {
-        const src = r.notes || r.recipe || '';
-        return src.length > 110 ? src.slice(0, 110) + '…' : src || 'Sin descripción.';
     };
 
     return (
@@ -182,26 +252,58 @@ const SlotPicker = ({ recipes, onSelect, onClose, preselected = [] }: Props) => 
                     {filtered.map(r => {
                         const isSelected = basketIds.has(r.id);
                         const isDisabled = !isSelected && isFull;
-                        const isExpanded = expanded === r.id;
+                        const isPopped   = popoverId === r.id;
+                        const mainIng    = parseMainIngredient(r.mainIngredient);
+                        const contexts   = r.context?.map(c => c.context).join(', ');
+
                         return (
-                            <li key={r.id} style={{ marginBottom: 2 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px', borderRadius: 10, background: isSelected ? C.accentDim : 'transparent', border: isSelected ? `1px solid rgba(255,149,0,0.25)` : '1px solid transparent', transition: 'background 0.15s' }}>
-                                    <button onClick={() => setExpanded(prev => prev === r.id ? null : r.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 0, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                                        {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                                    </button>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 600, color: isDisabled ? C.textMuted : C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</span>
-                                        {r.calorias && <span style={{ fontSize: 11, color: C.accent }}>{r.calorias} kcal</span>}
+                            <li key={r.id} style={{ marginBottom: 4, position: 'relative' }}>
+                                <div
+                                    onClick={() => !isDisabled && toggleRecipe(r)}
+                                    style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 10px', borderRadius: 10, background: isSelected ? C.accentDim : C.surface, border: isSelected ? `1px solid rgba(255,149,0,0.3)` : `1px solid ${C.border}`, cursor: isDisabled ? 'not-allowed' : 'pointer', opacity: isDisabled ? 0.45 : 1, transition: 'background 0.12s' }}
+                                >
+                                    {/* Checkbox */}
+                                    <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${isSelected ? C.accent : C.border2}`, background: isSelected ? C.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                                        {isSelected && <Check size={11} color="#000" strokeWidth={3} />}
                                     </div>
-                                    <button onClick={() => !isDisabled && toggleRecipe(r)} style={{ width: 22, height: 22, borderRadius: 6, border: `2px solid ${isSelected ? C.accent : C.border2}`, background: isSelected ? C.accent : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isDisabled ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: isDisabled ? 0.35 : 1, transition: 'all 0.15s' }}>
-                                        {isSelected && <Check size={12} color="#000" strokeWidth={3} />}
+
+                                    {/* Info */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: isDisabled ? C.textMuted : C.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {r.name}
+                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '3px 8px', marginTop: 4 }}>
+                                            {mainIng && <span style={{ fontSize: 11, color: C.textMuted }}>{mainIng}</span>}
+                                            {r.type && (
+                                                <span style={{ fontSize: 11, color: C.accent, background: 'rgba(255,149,0,0.1)', borderRadius: 4, padding: '1px 5px' }}>
+                                                    {TYPE_LABELS[r.type] ?? r.type}
+                                                </span>
+                                            )}
+                                            {contexts && <span style={{ fontSize: 11, color: C.textMuted }}>{contexts}</span>}
+                                            {r.prepTime != null && (
+                                                <span style={{ fontSize: 11, color: C.textMuted, display: 'flex', alignItems: 'center', gap: 3 }}>
+                                                    <Clock size={10} /> {r.prepTime} min
+                                                </span>
+                                            )}
+                                        </div>
+                                        {r.requiresPrevDay && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5, padding: '3px 7px', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.2)', borderRadius: 6, width: 'fit-content' }}>
+                                                <AlertTriangle size={10} color={C.accent} />
+                                                <span style={{ fontSize: 11, color: C.accent }}>Preparar el día anterior</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Botón ? */}
+                                    <button
+                                        onClick={e => { e.stopPropagation(); setPopoverId(isPopped ? null : r.id); }}
+                                        style={{ width: 22, height: 22, borderRadius: 6, background: isPopped ? C.accentDim : 'transparent', border: `1px solid ${isPopped ? C.accent : C.border2}`, color: isPopped ? C.accent : C.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, marginTop: 2 }}
+                                    >
+                                        <HelpCircle size={12} />
                                     </button>
                                 </div>
-                                {isExpanded && (
-                                    <div style={{ margin: '2px 10px 6px 32px', padding: '7px 10px', background: C.surface, borderRadius: 8, border: `1px solid ${C.border}` }}>
-                                        <p style={{ margin: 0, fontSize: 12, color: C.textMuted, lineHeight: 1.55 }}>{getPreview(r)}</p>
-                                    </div>
-                                )}
+
+                                {isPopped && <RecipePopover recipe={r} />}
                             </li>
                         );
                     })}

@@ -37,6 +37,10 @@ export interface Recipe {
   carbohidratos?: number | null
   calorias?: number | null
   frequency?: number | null
+  prepTime?: number | null
+  isComponent?: boolean
+  requiresPrevDay?: boolean
+  mainIngredient?: string | null  // JSON array string: '["PASTA","CARNE"]'
 }
 
 export interface RecipeContext {

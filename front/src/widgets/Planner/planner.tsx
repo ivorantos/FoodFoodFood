@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, ArrowLeftRight, Pencil, Trash2 } from 'lucide-react';
 
 import { DAYS_ES } from './plannerHelper';
-import type { MealType, RecipeSnapshot, SelectedSlot } from '../../domain/model.types';
+import type {MealType, Recipe, SelectedSlot} from '../../domain/model.types';
 import SlotPicker from "./slotPicker";
 import { usePlannerContext } from "./plannerContext";
+import RecipeDetailModal from "../../components/RecipeDetailModal";
 
 const MEAL_LABEL: Record<MealType, string> = { lunch: 'Comida', dinner: 'Cena' };
 
@@ -17,8 +18,8 @@ const Planner = () => {
     swapSource, startSwap, cancelSwap, confirmSwap
   } = usePlannerContext();
 
-  const [pickerPreselected, setPickerPreselected] = useState<RecipeSnapshot[]>([]);
   const [pickerSlot, setPickerSlot] = useState<SelectedSlot | null>(null);
+  const [detailRecipe, setDetailRecipe] = useState<Recipe | null>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancelSwap(); };
@@ -38,9 +39,7 @@ const Planner = () => {
       }
       return;
     }
-    if (!slot.snapshot) {
-      setPickerSlot({ date, mealType });
-    }
+    setPickerSlot({ date, mealType });
   };
 
   return (
@@ -129,25 +128,18 @@ const Planner = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <span style={{ fontWeight: 600, color: '#fff' }}>{MEAL_LABEL[mealType]}</span>
                       {slot.snapshot && !swapSource && (
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <button onClick={(e) => {
-                              e.stopPropagation();
-                              const snapshot = weekPlan[selectedDay][mealType].snapshot ?? [];
-                              setPickerPreselected(snapshot);
-                              setPickerSlot({ date: selectedDay, mealType });
-                            }} style={{ fontSize: 12, color: '#FF9500', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <Pencil size={12} /> Cambiar
-                            </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
                             <button onClick={(e) => {
                               e.stopPropagation();
                               startSwap({ date: selectedDay, mealType });
-                            }} style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
+                            }} style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                               <ArrowLeftRight size={12} /> Mover
                             </button>
                             <button onClick={(e) => {
                               e.stopPropagation();
                               clearSlot(selectedDay, mealType);
-                            }} style={{ fontSize: 12, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginLeft: 8 }}>
+                            }} style={{ fontSize: 12, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                               <Trash2 size={12} /> Quitar
                             </button>
                           </div>
@@ -156,8 +148,23 @@ const Planner = () => {
                     {slot.snapshot
                         ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           {slot.snapshot.map((s) => (
-                              <div key={s.id} style={{ background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FF9500', flexShrink: 0 }} />
+                              <div
+                                  key={s.id}
+                                  onClick={!s.isCustom ? (e) => {
+                                    e.stopPropagation();
+                                    setDetailRecipe(recipes.find(r => r.id === s.id) ?? null);
+                                  } : undefined}
+                                  style={{
+                                    background: '#1a1a1a',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 10,
+                                    padding: '8px 14px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    cursor: s.isCustom ? 'default' : 'pointer',
+                                  }}>
+                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FF9500', flexShrink: 0 }}/>
                                 <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{s.name}</span>
                               </div>
                           ))}
@@ -176,16 +183,21 @@ const Planner = () => {
         {pickerSlot && (
             <SlotPicker
                 recipes={recipes}
-                preselected={pickerPreselected}
+                preselectedIds={[]}
                 onSelect={(selected) => {
                   assignRecipe(pickerSlot.date, pickerSlot.mealType, selected);
                   setPickerSlot(null);
-                  setPickerPreselected([]);
                 }}
-                onClose={() => {
-                  setPickerSlot(null);
-                  setPickerPreselected([]);
-                }}
+                onClose={() => setPickerSlot(null)}
+            />
+        )}
+
+        {detailRecipe && (
+            <RecipeDetailModal
+                isOpen={true}
+                recipe={detailRecipe}
+                mode="view"
+                onClose={() => setDetailRecipe(null)}
             />
         )}
       </div>
