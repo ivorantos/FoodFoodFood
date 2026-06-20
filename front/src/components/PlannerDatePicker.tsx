@@ -19,7 +19,10 @@ const DAYS_HEADER = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
 function toISO(date: Date): string {
-    return date.toISOString().slice(0, 10);
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
 }
 
 function buildCalendarDays(year: number, month: number): (string | null)[] {
@@ -36,16 +39,20 @@ function buildCalendarDays(year: number, month: number): (string | null)[] {
 
 interface Props {
     recipeName: string;
-    onConfirm: (dates: string[], mealType: MealType) => void;
+    onConfirm: (dates: string[], mealType: MealType, copy?: boolean) => void;
     onClose: () => void;
+    singleDate?: boolean;
+    showCopyToggle?: boolean;
+    allowedDates?: string[];
 }
 
-const PlannerDatePicker = ({ recipeName, onConfirm, onClose }: Props) => {
+const PlannerDatePicker = ({ recipeName, onConfirm, onClose, singleDate = false, showCopyToggle = false, allowedDates }: Props) => {
     const today = new Date();
     const [viewYear, setViewYear]   = useState(today.getFullYear());
     const [viewMonth, setViewMonth] = useState(today.getMonth());
     const [selected, setSelected]   = useState<Set<string>>(new Set());
     const [mealType, setMealType]   = useState<MealType>('lunch');
+    const [copy, setCopy]           = useState(false);
 
     useEffect(() => {
         const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -68,6 +75,7 @@ const PlannerDatePicker = ({ recipeName, onConfirm, onClose }: Props) => {
     const toggleDay = (iso: string) => {
         if (iso < todayISO) return; // no permitir días pasados
         setSelected(prev => {
+            if (singleDate) return new Set([iso]);
             const next = new Set(prev);
             next.has(iso) ? next.delete(iso) : next.add(iso);
             return next;
@@ -76,7 +84,7 @@ const PlannerDatePicker = ({ recipeName, onConfirm, onClose }: Props) => {
 
     const handleConfirm = () => {
         if (!selected.size) return;
-        onConfirm(Array.from(selected).sort(), mealType);
+        onConfirm(Array.from(selected).sort(), mealType, copy);
     };
 
     return (
@@ -133,6 +141,13 @@ const PlannerDatePicker = ({ recipeName, onConfirm, onClose }: Props) => {
                     ))}
                 </div>
 
+                {showCopyToggle && (
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 13, color: C.textMuted, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={copy} onChange={e => setCopy(e.target.checked)} />
+                        Copiar (mantener también en el origen)
+                    </label>
+                )}
+
                 {/* Navegación mes */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.textMuted, padding: 4 }}>
@@ -159,7 +174,7 @@ const PlannerDatePicker = ({ recipeName, onConfirm, onClose }: Props) => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 3 }}>
                     {cells.map((iso, i) => {
                         if (!iso) return <div key={`empty-${i}`} />;
-                        const isPast    = iso < todayISO;
+                        const isPast    = iso < todayISO || (!!allowedDates && !allowedDates.includes(iso));
                         const isToday   = iso === todayISO;
                         const isSel     = selected.has(iso);
                         return (

@@ -6,6 +6,7 @@ import type {MealType, Recipe, SelectedSlot} from '../../domain/model.types';
 import SlotPicker from "./slotPicker";
 import { usePlannerContext } from "./plannerContext";
 import RecipeDetailModal from "../../components/RecipeDetailModal";
+import PlannerDatePicker from "../../components/PlannerDatePicker";
 
 const MEAL_LABEL: Record<MealType, string> = { lunch: 'Comida', dinner: 'Cena' };
 
@@ -15,31 +16,36 @@ const Planner = () => {
     weekPlan, selectedDayTotals, getDayTotals,
     clearSlot, weekOffset, setWeekOffset,
     assignRecipe, recipes,
-    swapSource, startSwap, cancelSwap, confirmSwap
+    moveSource, startMove, cancelMove, confirmMove
   } = usePlannerContext();
 
+  const [pickerPreselected, setPickerPreselected] = useState<string[]>([]);
   const [pickerSlot, setPickerSlot] = useState<SelectedSlot | null>(null);
   const [detailRecipe, setDetailRecipe] = useState<Recipe | null>(null);
 
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancelSwap(); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cancelMove(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [cancelSwap]);
+  }, [cancelMove]);
 
   const dayIndex = (iso: string) => (new Date(iso).getDay() + 6) % 7;
 
   const handleSlotClick = (date: string, mealType: MealType) => {
     const slot = weekPlan[date][mealType];
-    if (swapSource) {
-      if (swapSource.date === date && swapSource.mealType === mealType) {
-        cancelSwap();
-      } else {
-        confirmSwap(date, mealType);
-      }
-      return;
+    if (!slot.snapshot) {
+      setPickerSlot({ date, mealType });
     }
-    setPickerSlot({ date, mealType });
+  };
+
+  const openMoveItem = (date: string, mealType: MealType, index: number) => {
+    startMove(date, mealType, [index]);
+  };
+
+  const openMoveSlot = (date: string, mealType: MealType) => {
+    const count = (weekPlan[date][mealType].snapshot ?? []).length;
+    if (count) startMove(date, mealType, Array.from({ length: count }, (_, i) => i));
   };
 
   return (
@@ -50,12 +56,7 @@ const Planner = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: '#fff', margin: 0 }}>Plan Semanal</h1>
 
-            {swapSource && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#2a1f00', color: '#FF9500', padding: '6px 12px', borderRadius: 8, fontSize: 14, fontWeight: 500 }}>
-                  <ArrowLeftRight size={14} />
-                  Elige destino o pulsa Esc para cancelar
-                </div>
-            )}
+
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <button onClick={() => setWeekOffset(weekOffset - 1)} style={{ padding: 8, borderRadius: 8, background: '#1a1a1a', border: '1px solid rgba(255,255,255,0.08)', color: '#fff', cursor: 'pointer' }}>
@@ -75,13 +76,10 @@ const Planner = () => {
             {days.map((iso) => {
               const totals     = getDayTotals(iso);
               const isSelected = selectedDay === iso;
-              const isSwapSrc  = swapSource?.date === iso;
 
-              const cardStyle = isSwapSrc
-                  ? { background: '#2a1f00', border: '2px solid #FF9500' }
-                  : isSelected
-                      ? { background: '#FF9500', border: '2px solid transparent' }
-                      : { background: '#1a1a1a', border: '2px solid rgba(255,255,255,0.06)' };
+              const cardStyle = isSelected
+                  ? { background: '#FF9500', border: '2px solid transparent' }
+                  : { background: '#1a1a1a', border: '2px solid rgba(255,255,255,0.06)' };
 
               const textColor     = isSelected ? '#000' : '#fff';
               const subTextColor  = isSelected ? 'rgba(0,0,0,0.6)' : '#aaa';
@@ -111,14 +109,11 @@ const Planner = () => {
           <div style={{ maxWidth: 600, margin: '0 auto' }}>
             {(['lunch', 'dinner'] as MealType[]).map((mealType) => {
               const slot      = weekPlan[selectedDay][mealType];
-              const isSwapSrc = swapSource?.date === selectedDay && swapSource?.mealType === mealType;
-              const isSwapDst = !!swapSource && !(swapSource.date === selectedDay && swapSource.mealType === mealType);
+              const isMoveSrc = moveSource?.date === selectedDay && moveSource?.mealType === mealType;
 
-              const slotStyle = isSwapSrc
+              const slotStyle = isMoveSrc
                   ? { background: '#2a1f00', border: '2px solid #FF9500' }
-                  : isSwapDst
-                      ? { background: '#0d1a2a', border: '2px solid rgba(255,149,0,0.4)' }
-                      : { background: '#111', border: '1px solid rgba(255,255,255,0.08)' };
+                  : { background: '#111', border: '1px solid rgba(255,255,255,0.08)' };
 
               return (
                   <div
@@ -127,12 +122,12 @@ const Planner = () => {
                       style={{ borderRadius: 12, padding: 20, marginBottom: 16, cursor: 'pointer', transition: 'border 0.15s', minHeight: 100, ...slotStyle }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <span style={{ fontWeight: 600, color: '#fff' }}>{MEAL_LABEL[mealType]}</span>
-                      {slot.snapshot && !swapSource && (
+                      {slot.snapshot && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
 
                             <button onClick={(e) => {
                               e.stopPropagation();
-                              startSwap({ date: selectedDay, mealType });
+                              openMoveSlot(selectedDay, mealType);
                             }} style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
                               <ArrowLeftRight size={12} /> Mover
                             </button>
@@ -147,30 +142,36 @@ const Planner = () => {
                     </div>
                     {slot.snapshot
                         ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                          {slot.snapshot.map((s) => (
-                              <div
-                                  key={s.id}
-                                  onClick={!s.isCustom ? (e) => {
-                                    e.stopPropagation();
-                                    setDetailRecipe(recipes.find(r => r.id === s.id) ?? null);
-                                  } : undefined}
-                                  style={{
-                                    background: '#1a1a1a',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: 10,
-                                    padding: '8px 14px',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 8,
-                                    cursor: s.isCustom ? 'default' : 'pointer',
-                                  }}>
-                                <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#FF9500', flexShrink: 0 }}/>
-                                <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{s.name}</span>
+                          {slot.snapshot.map((s, i) => (
+                              <div key={`${s.id}-${i}`} style={{
+                                background: '#1a1a1a',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: 10,
+                                padding: '8px 14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                              }}>
+                                <div style={{
+                                  width: 7,
+                                  height: 7,
+                                  borderRadius: '50%',
+                                  background: '#FF9500',
+                                  flexShrink: 0
+                                }}/>
+                                <span style={{fontSize: 14, fontWeight: 600, color: '#fff'}}>{s.name}</span>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); openMoveItem(selectedDay, mealType, i); }}
+                                    title="Mover o copiar este item"
+                                    style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, marginLeft: 2 }}
+                                >
+                                  <ArrowLeftRight size={11} />
+                                </button>
                               </div>
                           ))}
                         </div>
-                        : <p style={{ color: '#555', fontSize: 14, fontStyle: 'italic', margin: 0 }}>
-                          {swapSource ? 'Pulsa aquí para mover aquí' : 'Sin asignar — pulsa para añadir'}
+                        : <p style={{color: '#555', fontSize: 14, fontStyle: 'italic', margin: 0}}>
+                          Sin asignar — pulsa para añadir
                         </p>
                     }
                   </div>
@@ -183,12 +184,28 @@ const Planner = () => {
         {pickerSlot && (
             <SlotPicker
                 recipes={recipes}
-                preselectedIds={[]}
+                preselected={weekPlan[pickerSlot.date][pickerSlot.mealType].snapshot ?? []}
                 onSelect={(selected) => {
                   assignRecipe(pickerSlot.date, pickerSlot.mealType, selected);
                   setPickerSlot(null);
                 }}
                 onClose={() => setPickerSlot(null)}
+            />
+        )}
+
+        {moveSource && (
+            <PlannerDatePicker
+                recipeName={
+                  moveSource.indexes
+                      .map(i => (weekPlan[moveSource.date][moveSource.mealType].snapshot ?? [])[i]?.name)
+                      .filter(Boolean)
+                      .join(', ')
+                }
+                singleDate
+                showCopyToggle
+                allowedDates={days}
+                onConfirm={(dates, mealType, copy) => confirmMove(dates[0], mealType, copy ?? false)}
+                onClose={cancelMove}
             />
         )}
 

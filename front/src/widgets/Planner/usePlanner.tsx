@@ -5,7 +5,7 @@ import {
     buildEmptyWeek,
     getDayTotals,
     getWeekStartFromOffset,
-    getWeekTotals,
+    getWeekTotals, snapshotToEntries,
 } from './plannerHelper';
 import { getRecetas } from '../../api/recipeService';
 import {
@@ -14,11 +14,17 @@ import {
     clearSlot as clearSlotAPI,
 } from '../../api/plannerService';
 
+interface MoveSource {
+    date:        string;
+    mealType:    MealType;
+    indexes:     number[];
+}
+
 interface PlannerState {
     weekOffset:   number;
     weekPlan:     WeekPlan;
     selectedSlot: SelectedSlot | null;
-    swapSource:   SelectedSlot | null;
+    moveSource:   MoveSource | null;
     selectedDay:  string;
     isDirty:      boolean;
 }
@@ -39,7 +45,7 @@ export function usePlanner() {
             weekOffset:   0,
             weekPlan,
             selectedSlot: null,
-            swapSource:   null,
+            moveSource:   null,
             selectedDay:  Object.keys(weekPlan)[0],
             isDirty:      false,
         };
@@ -129,33 +135,53 @@ export function usePlanner() {
         }));
     }, []);
 
-    const startSwap = useCallback((slot: SelectedSlot) => {
-        setState((prev) => ({ ...prev, swapSource: slot }));
+    const startMove = useCallback((date: string, mealType: MealType, indexes: number[]) => {
+        setState((prev) => ({ ...prev, moveSource: { date, mealType, indexes } }));
     }, []);
 
-    const cancelSwap = useCallback(() => {
-        setState((prev) => ({ ...prev, swapSource: null }));
+    const cancelMove = useCallback(() => {
+        setState((prev) => ({ ...prev, moveSource: null }));
     }, []);
 
-    const confirmSwap = useCallback((targetDate: string, targetMealType: MealType) => {
+    const confirmMove = useCallback((targetDate: string, targetMealType: MealType, copy: boolean) => {
         setState((prev) => {
-            if (!prev.swapSource) return prev;
-            const { date: srcDate, mealType: srcMeal } = prev.swapSource;
-            const srcSnapshot = prev.weekPlan[srcDate][srcMeal].snapshot;
-            const dstSnapshot = prev.weekPlan[targetDate][targetMealType].snapshot;
+            if (!prev.moveSource) return prev;
+            const { date: srcDate, mealType: srcMeal, indexes } = prev.moveSource;
+            if (!prev.weekPlan[targetDate]) return { ...prev, moveSource: null }; // destino fuera de la semana cargada
+            if (srcDate === targetDate && srcMeal === targetMealType) return { ...prev, moveSource: null };
+
+            const srcSnapshot = prev.weekPlan[srcDate][srcMeal].snapshot ?? [];
+            const movingItems = indexes.map(i => srcSnapshot[i]).filter(Boolean);
+            if (movingItems.length === 0) return { ...prev, moveSource: null };
+
+            const dstSnapshot = prev.weekPlan[targetDate][targetMealType].snapshot ?? [];
+            const freeSlots = 3 - dstSnapshot.length;
+            if (freeSlots <= 0) return { ...prev, moveSource: null };
+            const itemsToAdd = movingItems.slice(0, freeSlots);
+            const movedIndexes = new Set(indexes.slice(0, itemsToAdd.length));
+
+            const newDstSnapshot = [...dstSnapshot, ...itemsToAdd];
+            const newSrcSnapshot = copy ? srcSnapshot : srcSnapshot.filter((_, i) => !movedIndexes.has(i));
+
+            const weekStart = getWeekStartFromOffset(prev.weekOffset);
+            upsertSlot(weekStart, targetDate, targetMealType, snapshotToEntries(newDstSnapshot)).catch(console.error);
+            if (!copy) {
+                upsertSlot(weekStart, srcDate, srcMeal, snapshotToEntries(newSrcSnapshot)).catch(console.error);
+            }
+
             return {
                 ...prev,
                 isDirty: true,
-                swapSource: null,
+                moveSource: null,
                 weekPlan: {
                     ...prev.weekPlan,
                     [srcDate]: {
                         ...prev.weekPlan[srcDate],
-                        [srcMeal]: { ...prev.weekPlan[srcDate][srcMeal], snapshot: dstSnapshot },
+                        [srcMeal]: { ...prev.weekPlan[srcDate][srcMeal], snapshot: newSrcSnapshot.length ? newSrcSnapshot : null },
                     },
                     [targetDate]: {
                         ...prev.weekPlan[targetDate],
-                        [targetMealType]: { ...prev.weekPlan[targetDate][targetMealType], snapshot: srcSnapshot },
+                        [targetMealType]: { ...prev.weekPlan[targetDate][targetMealType], snapshot: newDstSnapshot },
                     },
                 },
             };
@@ -184,8 +210,8 @@ export function usePlanner() {
         setSelectedSlot,
         setSelectedDay,
         setWeekOffset,
-        startSwap,
-        cancelSwap,
-        confirmSwap,
+        startMove,
+        cancelMove,
+        confirmMove,
     };
 }

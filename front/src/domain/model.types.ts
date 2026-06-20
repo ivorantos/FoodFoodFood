@@ -64,6 +64,10 @@ export interface RecipeSlot {
   snapshot: RecipeSnapshot[] | null;  // array: un slot puede tener hasta 3 recetas
 }
 
+export interface ItemMoveSource extends SelectedSlot {
+  itemId: string;
+}
+
 export interface DayPlan {
   lunch:  RecipeSlot;
   dinner: RecipeSlot;
