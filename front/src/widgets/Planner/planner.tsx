@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, ArrowLeftRight, Pencil, Trash2 } from 'lucide-react';
+import {ChevronLeft, ChevronRight, ArrowLeftRight, Pencil, Trash2, RefreshCw} from 'lucide-react';
 
 import { DAYS_ES } from './plannerHelper';
 import type {MealType, Recipe, SelectedSlot} from '../../domain/model.types';
@@ -33,10 +33,7 @@ const Planner = () => {
   const dayIndex = (iso: string) => (new Date(iso).getDay() + 6) % 7;
 
   const handleSlotClick = (date: string, mealType: MealType) => {
-    const slot = weekPlan[date][mealType];
-    if (!slot.snapshot) {
-      setPickerSlot({ date, mealType });
-    }
+    setPickerSlot({ date, mealType });
   };
 
   const openMoveItem = (date: string, mealType: MealType, index: number) => {
@@ -106,7 +103,7 @@ const Planner = () => {
           </div>
 
           {/* Detalle día */}
-          <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div style={{ maxWidth: 1500, margin: '85px auto 0' }}>
             {(['lunch', 'dinner'] as MealType[]).map((mealType) => {
               const slot      = weekPlan[selectedDay][mealType];
               const isMoveSrc = moveSource?.date === selectedDay && moveSource?.mealType === mealType;
@@ -119,39 +116,71 @@ const Planner = () => {
                   <div
                       key={mealType}
                       onClick={() => handleSlotClick(selectedDay, mealType)}
-                      style={{ borderRadius: 12, padding: 20, marginBottom: 16, cursor: 'pointer', transition: 'border 0.15s', minHeight: 100, ...slotStyle }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      style={{ borderRadius: 12, padding: '16px 28px 28px', marginBottom: 28, cursor: 'pointer', transition: 'border 0.15s', minHeight: 200, ...slotStyle }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 45 }}>
                       <span style={{ fontWeight: 600, color: '#fff' }}>{MEAL_LABEL[mealType]}</span>
                       {slot.snapshot && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
 
                             <button onClick={(e) => {
                               e.stopPropagation();
                               openMoveSlot(selectedDay, mealType);
-                            }} style={{ fontSize: 12, color: '#aaa', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <ArrowLeftRight size={12} /> Mover
+                            }} style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: '#aaa',
+                              background: 'rgba(255,255,255,0.06)',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '8px 14px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6
+                            }}>
+                              <ArrowLeftRight size={15}/> Mover
                             </button>
                             <button onClick={(e) => {
                               e.stopPropagation();
                               clearSlot(selectedDay, mealType);
-                            }} style={{ fontSize: 12, color: '#ff4444', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <Trash2 size={12} /> Quitar
+                            }} style={{
+                              fontSize: 14,
+                              fontWeight: 600,
+                              color: '#ff4444',
+                              background: 'rgba(255,68,68,0.1)',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '8px 14px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6
+                            }}>
+                              <Trash2 size={15}/> Quitar
                             </button>
                           </div>
                       )}
                     </div>
                     {slot.snapshot
-                        ? <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                        ? <div style={{display: 'flex', gap: 8, flexWrap: 'wrap'}}>
                           {slot.snapshot.map((s, i) => (
-                              <div key={`${s.id}-${i}`} style={{
-                                background: '#1a1a1a',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: 10,
-                                padding: '8px 14px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 8,
-                              }}>
+                              <div key={`${s.id}-${i}`}
+                                   onClick={(e) => {
+                                     e.stopPropagation();
+                                     if (s.isCustom) return;
+                                     const r = recipes.find(r => r.id === s.id);
+                                     if (r) setDetailRecipe(r);
+                                   }}
+                                   style={{
+                                     background: '#1a1a1a',
+                                     border: '1px solid rgba(255,255,255,0.1)',
+                                     borderRadius: 10,
+                                     padding: '14px 20px',
+                                     display: 'flex',
+                                     alignItems: 'center',
+                                     gap: 8,
+                                     cursor: s.isCustom ? 'default' : 'pointer',
+                                   }}>
                                 <div style={{
                                   width: 7,
                                   height: 7,
@@ -161,11 +190,25 @@ const Planner = () => {
                                 }}/>
                                 <span style={{fontSize: 14, fontWeight: 600, color: '#fff'}}>{s.name}</span>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); openMoveItem(selectedDay, mealType, i); }}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      openMoveItem(selectedDay, mealType, i);
+                                    }}
                                     title="Mover o copiar este item"
-                                    style={{ background: 'none', border: 'none', color: '#666', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 0, marginLeft: 2 }}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#666',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      padding: 6,
+                                      marginLeft: 'auto',
+                                      paddingLeft: 16,
+                                      borderRadius: 6
+                                    }}
                                 >
-                                  <ArrowLeftRight size={11} />
+                                  <RefreshCw size={16}/>
                                 </button>
                               </div>
                           ))}
